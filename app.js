@@ -6,6 +6,8 @@ const sort = fn => arr => arr.slice(0).sort(fn)
 const noOp = () => {}
 sort.byScore = sort((a,b) => a.score - b.score)
 
+const tryCatch = (fn, ...args) => { try { return fn(...args) } catch(err) { return err }
+
 const reduceMap = (fn, acc) => {
   let x = -1, y
   while (++x < SIZE) {
@@ -104,7 +106,10 @@ const update = () => {
   players
     .filter(livingPlayers)
     .map(player => {
-      const aiRet = player.ai(map)
+      const aiRet = tryCatch(player.ai, map)
+      if (aiRet instanceOf Error) {
+        return { error: aiRet }
+      }
       const dir = aiRet && (typeof aiRet === 'object')
         ? aiRet
         : addPos(player, DIR[aiRet] || { x: 0, y: 0})
@@ -146,7 +151,11 @@ const update = () => {
 
       return pos
     })
-    .filter(({ player, x, y }, _, calculatedMoves) => {
+    .filter(({ player, x, y, error }, _, calculatedMoves) => {
+      if (error) {
+        console.error(error)
+        return player.cause = `AI error: ${error.message}`
+      }
       const pos = { x, y }
       if (calculatedMoves.some(move =>
           move.player !== player && move.x === x && move.y === y)) {
