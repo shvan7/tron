@@ -108,7 +108,7 @@ const update = () => {
     .map(player => {
       const aiRet = tryCatch(player.ai, map)
       if (aiRet instanceOf Error) {
-        return { error: aiRet }
+        return { error: aiRet, player }
       }
       const dir = aiRet && (typeof aiRet === 'object')
         ? aiRet
