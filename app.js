@@ -1,4 +1,7 @@
 const graphic = require('./graphics-super-hd')
+const hslToRgb = require('./hsl-to-rgb')
+const { js } = require('izi/inject')
+const cdnBaseUrl = 'https://cdnjs.cloudflare.com/ajax/libs'
 const { SIZE, DIR } = require('./config')
 const PI4 = Math.PI / 4
 const sget = (key, src) => src && (src[key] || (src[key] = Object.create(null)))
@@ -6,7 +9,7 @@ const sort = fn => arr => arr.slice(0).sort(fn)
 const noOp = () => {}
 sort.byScore = sort((a,b) => a.score - b.score)
 
-const tryCatch = (fn, ...args) => { try { return fn(...args) } catch(err) { return err }
+const tryCatch = (fn, ...args) => { try { return fn(...args) } catch(err) { return err } }
 
 const reduceMap = (fn, acc) => {
   let x = -1, y
@@ -107,7 +110,7 @@ const update = () => {
     .filter(livingPlayers)
     .map(player => {
       const aiRet = tryCatch(player.ai, map)
-      if (aiRet instanceOf Error) {
+      if (aiRet instanceof Error) {
         return { error: aiRet, player }
       }
       const dir = aiRet && (typeof aiRet === 'object')
@@ -173,7 +176,6 @@ const update = () => {
       player.y = y
       player.score++
       (nextMove[x] || (nextMove[x] = Object.create(null)))[y] = player
-      console.log(`${pad(player.name)} -> x${_0(x)} y${_0(y)}`)
       return false
     }).forEach(({ player }) => killPlayer(player))
 
@@ -195,12 +197,11 @@ const update = () => {
 window.update = update
 
 const empty = () => emptyTile
-const toggle = (ok, value) => value
 const initPlayerData = nextMapState => {
   const angle = (Math.PI * 2) / players.length
-  const colorRate = (100 / players.length / 100) * 360
+  const rate = (100 / players.length / 100)
   players.forEach((player, i) => {
-    player.color = `hsl(${toggle(i % 2, i * colorRate)}, 100%, 40%)`
+    player.color = hslToRgb(i * rate, 1, 0.4)
     const x = Math.round(Math.cos(angle * i) * (SIZE / 2 * 0.8) + (SIZE / 2))
     const y = Math.round(Math.sin(angle * i) * (SIZE / 2 * 0.8) + (SIZE / 2))
     player.x = x
@@ -209,7 +210,10 @@ const initPlayerData = nextMapState => {
   })
 }
 
-const prepareNewGame = () => Promise.all(players.map(p => p.load)).then(() => {
+const prepareNewGame = () => Promise.all(players
+  .map(p => p.load)
+  .concat([ js(`${cdnBaseUrl}/pixi.js/4.5.1/pixi.min.js`) ]))
+.then(() => {
   const nextMapState = genMapFrom(empty)
 
   state.map.length = 0
