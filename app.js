@@ -87,7 +87,10 @@ const addPlayer = name => {
 
 //const calculatePosition = () => 
 
-const killPlayer = player => player.dead = true
+const killPlayer = p => {
+  console.log(`${p.name} died because he ${p.cause} at ${p.x} ${p.y}`)
+  p.dead = true
+}
 
 /*
 getTile(x, y)
