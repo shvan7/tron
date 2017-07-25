@@ -18,5 +18,5 @@ const getRandomFreeSlot = (getPos, isFree) => pickRandom(directions
 // and your player object
 return ({ isFree, getDist, reduceMap, getPos }) => {
 
-  return getRandomFreeSlot(getPos, isFree) || 'up'
+  return 'down' //getRandomFreeSlot(getPos, isFree) || 'up'
 }
