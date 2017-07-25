@@ -90,6 +90,7 @@ const addPlayer = name => {
 const killPlayer = p => {
   console.log(`${p.name} died because he ${p.cause} at ${p.x} ${p.y}`)
   p.dead = true
+  graphic.setScore(p)
 }
 
 /*

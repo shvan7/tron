@@ -1,6 +1,7 @@
 const { SIZE, CASE_SIZE: S } = require('./config')
 const h = require('izi/h')
-let map, stage, renderer
+const names = Object.create(null)
+let stage, renderer
 const createCaseEl = h.style({
   height: `${S}px`,
   width: `${S}px`,
@@ -11,8 +12,7 @@ Object.assign(document.body.style, {
   background: 'darkgrey',
 })
 
-const translate = (x, y) =>
-  `translate(${~~(x * S)}px, ${~~(y * S)}px)`
+const translate = (x, y) => `translate(${~~(x * S)}px, ${~~(y * S)}px)`
 
 let fadingRects = []
 const isFading = rect => rect.alpha <= 1
@@ -26,18 +26,13 @@ module.exports = {
   init: (mapState, genMapFrom, players) => {
     renderer = PIXI.autoDetectRenderer(S * SIZE, S * SIZE)
     stage = new PIXI.Container()
-    map = {}
-    /*
-    map = genMapFrom((x, y) => {
-    })
-  */
     h.replaceContent(document.body, h.div.style({
       display: 'flex',
       flexWrap: 'wrap',
       position: 'relative',
       margin: '0 auto',
       width: `${S * SIZE}px`,
-    }, [ renderer.view ].concat(players.map(({ name, x, y }) => map[name] = h.div.style({
+    }, players.map(({ name, x, y }) => names[name] = h.div.style({
       position: 'absolute',
       left: 0,
       top: 0,
@@ -51,13 +46,21 @@ module.exports = {
         '1px -1px black',
         '1px 1px black',
       ].join(', m')
-    }, name)))))
+    }, name)).concat([ renderer.view ])))
 
     renderer.render(stage)
     return mapState
   },
+  setScore: () => players
+    .filter(p => p.dead)
+    .sort((a, b) => b.score - a.score || b.name - a.name)
+    .forEach(({ name, x, y, cause, score }, i) => {
+      const el = names[name]
+      el.textContent = `#${score} - ${name}`
+      el.style.transform = translate(0, i * 2)
+    }),
   update: nextMoves => {
-    nextMoves.forEach(({ name, x, y, color }) => {
+    nextMoves.forEach(({ name, x, y, color, dead }) => {
       //const { style } = map[y][x]
 
       const rect = new PIXI.Graphics()
@@ -67,7 +70,7 @@ module.exports = {
       rect.endFill()
       stage.addChild(rect)
       fadingRects.push(rect)
-      map[name].style.transform = translate(x, y)
+      dead || (names[name].style.transform = translate(x, y))
     })
     fadeTrail()
     renderer.render(stage)
