@@ -15,6 +15,10 @@ Object.assign(document.body.style, {
 const translate = (x, y) => `translate(${~~(x * S)}px, ${~~(y * S)}px)`
 
 let fadingRects = []
+const _padNumber = n => ` #${n}`.slice(-3)
+const _pad = str => `${str}      `.slice(0, 8)
+const getRank = (i, players, length) =>
+  _padNumber(players.length - (length - (i + 1)))
 const isFading = rect => rect.alpha <= 1
 const fade = rect => rect.alpha += 0.0075
 const fadeTrail = () => {
@@ -38,7 +42,9 @@ module.exports = {
       top: 0,
       transform: translate(x, y),
       transition: 'transform 0.1s',
+      whiteSpace: 'pre',
       color: 'white',
+      opacity: 1,
       fontFamily: 'monospace',
       textShadow: [
         '-1px -1px black',
@@ -54,10 +60,14 @@ module.exports = {
   setScore: () => players
     .filter(p => p.dead)
     .sort((a, b) => b.score - a.score || b.name - a.name)
-    .forEach(({ name, x, y, cause, score }, i) => {
+    .forEach(({ name, x, y, cause, score }, i, { length }) => {
       const el = names[name]
-      el.textContent = `#${score} - ${name}`
+      el.textContent = `${getRank(i, players, length)} - ${_pad(name)} (${score})`
+      el.style.transition = 'transform 0.5s ease-in, opacity 5s ease-out'
       el.style.transform = translate(0, i * 2)
+      if (i > 2) {
+        el.style.opacity = 0
+      }
     }),
   update: nextMoves => {
     nextMoves.forEach(({ name, x, y, color, dead }) => {
