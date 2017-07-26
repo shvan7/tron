@@ -7,7 +7,7 @@ const directions = [
   { x: 0, y: 1 },  // down
   { x: -1, y: 0 }, // left
 ]
-const d = directions
+const D = directions
 
 const UP    = 0
 const RIGHT = 1
