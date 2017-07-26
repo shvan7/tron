@@ -1,6 +1,9 @@
 const graphic = require('./graphics-super-hd')
 const hslToRgb = require('./hsl-to-rgb')
+const rseed = require('./rseed')
+const { shuffle } = require('izi/arr')
 const { js } = require('izi/inject')
+const routeParams = require('./router')
 const cdnBaseUrl = 'https://cdnjs.cloudflare.com/ajax/libs'
 const { SIZE, DIR } = require('./config')
 const PI4 = Math.PI / 4
@@ -10,7 +13,6 @@ const noOp = () => {}
 sort.byScore = sort((a,b) => a.score - b.score)
 
 const tryCatch = (fn, ...args) => { try { return fn(...args) } catch(err) { return err } }
-
 const reduceMap = (fn, acc) => {
   let x = -1, y
   while (++x < SIZE) {
@@ -22,7 +24,8 @@ const reduceMap = (fn, acc) => {
   return acc
 }
 
-Math.random = require('./rseed').float
+Math.random = rseed.float
+rseed.seed(routeParams.seed)
 
 const emptyTile = Object.freeze({ color: 'black', name: 'empty' })
 const notInBounds = n => n >= SIZE || n < 0
@@ -51,7 +54,9 @@ const addPlayer = name => {
     color: 'purple',
     dead: false,
     score: 0,
-    load: fetch(`https://thot.space/${name}/tron/raw/master/ai.js?${Math.random()}`)
+    load:
+      fetch(`https://thot.space/${name}/tron/raw/master/ai.js?${Math.random()}`)
+      //fetch(`/cdenis.js`)
       .then(res => res.status === 200
         ? res.text()
         : Promise.reject(Error(`Error: ${res.status} - ${res.statusText}`)))
@@ -98,7 +103,11 @@ getTile(x, y)
 forEachTile( { x, y, content:  } )
 */
 
-const gameOver = () => console.log('game over', sort.byScore(players))
+const gameOver = () => {
+  graphic.end()
+  console.log('game over', sort.byScore(players))
+}
+
 const livingPlayers = player => !player.dead
 window.players = players
 const addPos = (a, b) => ({ x: a.x + b.x, y: a.y + b.y })
@@ -192,7 +201,7 @@ const update = () => {
   graphic.update(players)
 
   if (Object.keys(nextMove).length) {
-    requestAnimationFrame(update)
+    setTimeout(() => requestAnimationFrame(update), 0)
   } else {
     gameOver()
   }
@@ -228,20 +237,7 @@ const prepareNewGame = () => Promise.all(players
   update()
 })
 
-const team = [
-  { id: '321523402227580929', login: 'fbertoia' },
-  { id: '332162982731710465', login: 'bro' },
-  { id: '149547279886450688', login: 'rchoquer' },
-  { id: '320547294296539138', login: 'kbennani' },
-  { id: '226375929385975808', login: 'adarinot' },
-  { id: '272861842550816768', login: 'tgelu' },
-  { id: '226811027046531073', login: 'rfautier' },
-  { id: '320775653265899520', login: 'mgregoir' },
-].map(({ login }) => addPlayer(login))
-addPlayer('cdenis')
-addPlayer('xpetit')
-addPlayer('ycribier')
-
+shuffle(routeParams.users.sort()).forEach(addPlayer)
 prepareNewGame()
 
 /*

@@ -36,15 +36,16 @@ module.exports = {
       position: 'relative',
       margin: '0 auto',
       width: `${S * SIZE}px`,
-    }, players.map(({ name, x, y }) => names[name] = h.div.style({
+    }, players.map(({ name, x, y, color }) => names[name] = h.div.style({
       position: 'absolute',
       left: 0,
       top: 0,
       transform: translate(x, y),
       transition: 'transform 0.1s',
       whiteSpace: 'pre',
-      color: 'white',
+      color: '#'+ `00000${color.toString(16)}`.slice(-6),
       opacity: 1,
+      background: 'rgba(0, 0, 0, 0.5)',
       fontFamily: 'monospace',
       textShadow: [
         '-1px -1px black',
@@ -67,9 +68,6 @@ module.exports = {
       el.textContent = `${getRank(i, players, length)} - ${_pad(name)} (${score})`
       el.style.transition = 'transform 0.5s ease-in, opacity 5s ease-out'
       el.style.transform = translate(0, i * 2)
-      if (i > 2) {
-        el.style.opacity = 0.1 + ((length - i) / players.length) / 2.5
-      }
     }),
   update: nextMoves => {
     nextMoves.forEach(({ name, x, y, color, dead }) => {
