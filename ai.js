@@ -33,7 +33,6 @@ const snail = () => {
   }
 
   if (!isFree(getPos(D[(currentDirection)]))) {
-    log('reverseSnail')
     isReverse = true
     return reverseSnail()
   }
@@ -48,7 +47,6 @@ const reverseSnail = () => {
   }
 
   if (!isFree(getPos(D[(currentDirection)]))) {
-    log('snail')
     isReverse = false
     return snail()
   }
