@@ -1,5 +1,7 @@
 SIZE  //available size of the map
 
+let isFree, getDist, reduceMap, getPos
+
 // here you can setup any functions you will use in your final solve function
 const directions = [
   { key: 'up',    x:  0, y: -1 },
@@ -20,7 +22,6 @@ const getRandomFreeSlot = (getPos, isFree) => pickRandom(directions
   .filter(isFree))
 
 
-let radius = 1
 let currentDirection = UP
 
 const snail = () => {
@@ -32,12 +33,12 @@ const snail = () => {
 
 // you should return a function that is called with those 4 tools functions
 // and your player object
-return ({ isFree, getDist, reduceMap, getPos }) => {
+return (e) => {
 
-  // isFree({x: 0, y: 0})
-  // reduceMap((x, y, acc) => {})
-  // getDist({x,y}, {x,y})
-  // getPos() -> {x, y}
+  isFree = e.isFree // isFree({x: 0, y: 0})
+  getDist = e.getDist // reduceMap((x, y, acc) => {})
+  reduceMap = e.reduceMap // getDist({x,y}, {x,y})
+  getPos = e.getPos // getPos() -> {x, y}
 
   return snail()
 
