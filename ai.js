@@ -2,10 +2,10 @@ SIZE  //available size of the map
 
 // here you can setup any functions you will use in your final solve function
 const directions = [
-  { x: 0, y: -1 }, // up
-  { x: 1, y: 0 },  // right
-  { x: 0, y: 1 },  // down
-  { x: -1, y: 0 }, // left
+  { key: 'up',    x:  0, y: -1 },
+  { key: 'right', x:  1, y:  0 },
+  { key: 'down',  x:  0, y:  1 },
+  { key: 'left',  x: -1, y:  0 },
 ]
 const D = directions
 
@@ -23,6 +23,13 @@ const getRandomFreeSlot = (getPos, isFree) => pickRandom(directions
 let radius = 1
 let currentDirection = UP
 
+const snail = () => {
+  if (isFree(getPos(D[ (currentDirection + 1) % 4 ]))) {
+    currentDirection = (currentDirection + 1) % 4
+  }
+  return directions[currentDirection].key
+}
+
 // you should return a function that is called with those 4 tools functions
 // and your player object
 return ({ isFree, getDist, reduceMap, getPos }) => {
@@ -31,6 +38,8 @@ return ({ isFree, getDist, reduceMap, getPos }) => {
   // reduceMap((x, y, acc) => {})
   // getDist({x,y}, {x,y})
   // getPos() -> {x, y}
+
+  return snail()
 
   switch (currentDirection) {
 
@@ -69,9 +78,3 @@ return ({ isFree, getDist, reduceMap, getPos }) => {
 
   return getRandomFreeSlot(getPos, isFree) || 'up'
 }
-
-xoxxx
-xooox
-xoxox
-xooox
-xxxxx
