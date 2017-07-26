@@ -25,24 +25,34 @@ const getRandomFreeSlot = (getPos, isFree) => pickRandom(directions
 
 
 let currentDirection = UP
+let isReverse = false
 
 const snail = () => {
-  if (isFree(getPos(D[ (currentDirection + 1) % 4 ]))) {
+  if (isFree(getPos(D[(currentDirection + 1) % 4]))) {
     currentDirection = (currentDirection + 1) % 4
   }
 
   if (!isFree(getPos(D[(currentDirection)]))) {
-    return getRandomFreeSlot(getPos, isFree)
+    log('reverseSnail')
+    isReverse = true
+    return reverseSnail()
   }
 
-  log(`heading ${directions[currentDirection].key}`)
   return directions[currentDirection].key
 }
 
-const snailPlus = () => {
-  if (isFree(getPos(D[ (currentDirection + 1) % 4 ]))) {
-    currentDirection = (currentDirection + 1) % 4
+const reverseSnail = () => {
+  const dir = (currentDirection - 1) < 0 ? 3 : currentDirection - 1
+  if (isFree(getPos(D[dir]))) {
+    currentDirection = dir
   }
+
+  if (!isFree(getPos(D[(currentDirection)]))) {
+    log('snail')
+    isReverse = false
+    return snail()
+  }
+
   return directions[currentDirection].key
 }
 
@@ -55,5 +65,5 @@ return (e) => {
   reduceMap = e.reduceMap // getDist({x,y}, {x,y})
   getPos = e.getPos // getPos() -> {x, y}
 
-  return snail()
+  return isReverse ? reverseSnail() : snail()
 }
