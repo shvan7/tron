@@ -28,6 +28,18 @@ const snail = () => {
   if (isFree(getPos(D[ (currentDirection + 1) % 4 ]))) {
     currentDirection = (currentDirection + 1) % 4
   }
+
+  if (!isFree(getPos(D[(currentDirection)]))) {
+    return getRandomFreeSlot(getPos, isFree)
+  }
+
+  return directions[currentDirection].key
+}
+
+const snailPlus = () => {
+  if (isFree(getPos(D[ (currentDirection + 1) % 4 ]))) {
+    currentDirection = (currentDirection + 1) % 4
+  }
   return directions[currentDirection].key
 }
 
@@ -41,41 +53,4 @@ return (e) => {
   getPos = e.getPos // getPos() -> {x, y}
 
   return snail()
-
-  switch (currentDirection) {
-
-  case UP:
-    if (isFree(getPos(D[RIGHT]))) {
-      currentDirection = RIGHT
-      return 'right'
-    }
-    return 'up'
-
-
-  case RIGHT:
-    if (isFree(getPos(D[DOWN]))) {
-      currentDirection = DOWN
-      return 'down'
-    }
-    return 'right'
-
-
-  case DOWN:
-    if (isFree(getPos(D[LEFT]))) {
-      currentDirection = LEFT
-      return 'left'
-    }
-    return 'down'
-
-
-  case LEFT:
-    if (isFree(getPos(D[UP]))) {
-      currentDirection = UP
-      return 'up'
-    }
-    return 'left'
-
-  }
-
-  return getRandomFreeSlot(getPos, isFree) || 'up'
 }
