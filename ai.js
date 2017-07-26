@@ -16,6 +16,8 @@ const RIGHT = 1
 const DOWN  = 2
 const LEFT  = 3
 
+const log = (...args) => console.log("ycribier ~>", ...args)
+
 const pickRandom = arr => arr[Math.floor(Math.random() * arr.length)]
 const getRandomFreeSlot = (getPos, isFree) => pickRandom(directions
   .map(getPos)
@@ -33,6 +35,7 @@ const snail = () => {
     return getRandomFreeSlot(getPos, isFree)
   }
 
+  log(`heading ${directions[currentDirection].key}`)
   return directions[currentDirection].key
 }
 
