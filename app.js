@@ -77,7 +77,6 @@ const addPlayer = name => {
     score: 0,
     load:
       fetch(`https://thot.space/${name}/tron/raw/master/ai.js?${Math.random()}`)
-      //fetch(`/cdenis.js`)
       .then(res => res.status === 200
         ? res.text()
         : Promise.reject(Error(`Error: ${res.status} - ${res.statusText}`)))
@@ -98,6 +97,8 @@ const addPlayer = name => {
             getDist,
             reduceMap,
             players: computePlayers(),
+            reduceMapCheck: fn => reduceMap((x, y, acc) =>
+              fn(x, y, mapState[x][y] === emptyTile, acc))
           })
         } catch(err) {
           return err

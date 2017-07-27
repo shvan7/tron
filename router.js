@@ -11,3 +11,6 @@ const params = module.exports = {
   users: fromUrl.users ? fromUrl.users.split(',') : defaultsParams.users,
 }
 window.location.hash = `?seed=${params.seed}&users=${params.users.join()}`
+window.addEventListener('hashchange', () => {
+  window.location.reload(1)
+})
