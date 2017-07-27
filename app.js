@@ -36,6 +36,7 @@ const genMapFrom = (fn = noOp) => reduceMap((x, y, map) => {
 }, Array(SIZE))
 
 const players = []
+const playerNames = Object.create(null)
 const state = {
   players,
   map: [],
@@ -47,10 +48,19 @@ const start = () => {}
 // get the manathan distance between 2 points
 const dist = (a, b) => Math.abs(a - b)
 const getDist = (a, b) => dist(a.x, b.x) + dist(a.y, b.y)
+const getName = p => p.name
+const getPlayerNames = () => players.map(getName)
 const addPlayer = name => {
   console.log('fetching: ', name)
-  const player = {
-    name,
+
+  let indexedName = name
+  if (playerNames[name]) {
+    const regex = new RegExp(`^${name}(\d+)?`)
+    const len = getPlayerNames().filter(n => regex.test(n)).length
+    indexedName = `${name}${len > 0 ? len + 1 : ''}`
+  }
+  const player = playerNames[indexedName] = {
+    name: indexedName,
     color: 'purple',
     dead: false,
     score: 0,
@@ -86,11 +96,11 @@ const addPlayer = name => {
       }),
 //    load: Promise.resolve(),
   }
-  
+
   players.push(player)
 }
 
-//const calculatePosition = () => 
+//const calculatePosition = () =>
 
 const killPlayer = p => {
   console.log(`${p.name} died because he ${p.cause} at ${p.x} ${p.y}`)
