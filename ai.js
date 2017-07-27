@@ -15,8 +15,16 @@ const getRandomFreeSlot = (getPos, isFree) => pickRandom(directions
 
 
 // you should return a function that is called with those 4 tools functions
-// and your player object
-return ({ isFree, getDist, reduceMap, getPos }) => {
+// and the players array
+// a player is an object such as
+// {
+//   name,
+//   score,
+//   dead, // boolean
+//   x,
+//   y,
+// }
+return ({ isFree, getDist, reduceMap, getPos, players }) => {
 
   return getRandomFreeSlot(getPos, isFree) || 'up'
 }
