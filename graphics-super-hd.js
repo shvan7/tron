@@ -16,7 +16,7 @@ const translate = (x, y) => `translate(${~~(x * S)}px, ${~~(y * S)}px)`
 
 let fadingRects = []
 const _padNumber = n => ` #${n}`.slice(-3)
-const _pad = str => `${str}      `.slice(0, 8)
+const _pad = str => `${str}        `.slice(0, 10)
 const getRank = (i, players, length) =>
   _padNumber(players.length - (length - (i + 1)))
 const isFading = rect => rect.alpha <= 1
