@@ -1,3 +1,4 @@
+const state = require('./state')
 const { SIZE, CASE_SIZE: S } = require('./config')
 const h = require('izi/h')
 const names = Object.create(null)
@@ -26,12 +27,53 @@ const fadeTrail = () => {
   fadingRects.forEach(fade)
 }
 
+const ctrlBtn = h('button.ctrl-btn', {
+  style: {
+    border: 'none',
+    padding: '8px',
+    width: '30px',
+    height: '30px',
+    outline: 0,
+    backgroundColor: 'transparent',
+    color: 'white',
+  }
+})
+
+const pauseBtn = ctrlBtn({
+  onclick: () => state.paused.set(!state.paused()),
+  title: 'space to pause',
+}, state.paused() ? '▷' : '❘❘')
+
+state.paused(paused => pauseBtn.textContent = paused ? '▷' : '❘❘')
+
+const reloadBtn = ctrlBtn({
+  onclick: () => state.shouldReload.set(true),
+  title: 'r to reload',
+}, '↺')
+
+const speedDisplay = h.span.style({
+  border: 'none',
+  display: 'inline-block',
+  boxSizing: 'border-box',
+  whiteSpace: 'nowrap',
+  padding: '8px',
+  width: '100px',
+  height: '30px',
+  outline: 0,
+  backgroundColor: 'transparent',
+  color: 'white',
+}, `speed x${state.speedFactor()}`)
+
+state.speedFactor(speedFactor => speedDisplay.textContent = `speed x${state.speedFactor()}`)
+
+
 module.exports = {
   init: (mapState, genMapFrom, players) => {
-    renderer = PIXI.autoDetectRenderer(S * SIZE, S * SIZE)
+    renderer || (renderer = PIXI.autoDetectRenderer(S * SIZE, S * SIZE))
     stage = new PIXI.Container()
     h.replaceContent(document.body, h.div.style({
       display: 'flex',
+      fontFamily: 'monospace',
       flexWrap: 'wrap',
       position: 'relative',
       margin: '0 auto',
@@ -43,18 +85,29 @@ module.exports = {
       transform: translate(x, y),
       transition: 'transform 0.1s',
       whiteSpace: 'pre',
-      color: 'white',
+      color: '#'+ `00000${color.toString(16)}`.slice(-6),
       opacity: 1,
-      padding: '2px',
       background: 'rgba(0, 0, 0, 0.25)',
-      fontFamily: 'monospace',
       textShadow: [
         '-1px -1px black',
         '-1px 1px black',
         '1px -1px black',
         '1px 1px black',
       ].join(', m')
-    }, name)).concat([ renderer.view ])))
+    }, name)).concat([
+      renderer.view,
+      // control bar
+      h.div.style({
+        position: 'absolute',
+        top: 0,
+        right: 0,
+        backgroundColor: 'rgba(255, 255, 255, 0.1)',
+      }, [
+        speedDisplay,
+        pauseBtn,
+        reloadBtn,
+      ])
+    ])))
 
     renderer.render(stage)
     return mapState
@@ -64,19 +117,14 @@ module.exports = {
     .sort((a, b) => b.score === a.score
       ? a.name - b.name
       : b.score - a.score)
-    .forEach(({ name, x, y, cause, score, color }, i, { length }) => {
+    .forEach(({ name, x, y, cause, score }, i, { length }) => {
       const el = names[name]
       el.textContent = `${getRank(i, players, length)} - ${_pad(name)} (${score})`
-      el.style.position = 'fixed'
-      el.style.color = '#'+ `00000${color.toString(16)}`.slice(-6)
-      el.style.background = 'black'
       el.style.transition = 'transform 0.5s ease-in, opacity 5s ease-out'
       el.style.transform = translate(0, i * 2)
     }),
   update: nextMoves => {
     nextMoves.forEach(({ name, x, y, color, dead }) => {
-      //const { style } = map[y][x]
-
       const rect = new PIXI.Graphics()
       rect.beginFill(color)
       rect.alpha = 0.3

@@ -1,4 +1,6 @@
+const state = require('./state')
 const graphic = require('./graphics-super-hd')
+const keyHandler = require('izi/key-handler')
 const hslToRgb = require('./hsl-to-rgb')
 const rseed = require('./rseed')
 const { shuffle } = require('izi/arr')
@@ -35,12 +37,8 @@ const genMapFrom = (fn = noOp) => reduceMap((x, y, map) => {
   return map
 }, Array(SIZE))
 
-const players = []
+const players = state.players
 const playerNames = Object.create(null)
-const state = {
-  players,
-  map: [],
-}
 
 const getMap = () => state.map[state.map.length - 1]
 const start = () => {}
@@ -136,6 +134,12 @@ const clamp1 = (a, b) => Math.sign(a) + b
 const getAngle = (a, b) => Math.atan2(b.y - a.y, b.x - a.x)
 const _0 = n => n < 10 ? `0${n}` : String(n)
 const pad = str => `        ${str}`.slice(-8)
+let updateId = 0
+let timeoutId = 0
+const cancelUpdate = () => {
+  cancelAnimationFrame(updateId)
+  clearTimeout(timeoutId)
+}
 const update = () => {
   const nextMove = Object.create(null)
   const map = state.map[state.map.length - 1]
@@ -221,12 +225,29 @@ const update = () => {
   state.map.push(generatedMap)
   graphic.update(players)
 
-  if (Object.keys(nextMove).length) {
-    setTimeout(() => requestAnimationFrame(update), 0)
+  if (Object.keys(nextMove).length && !state.paused()) {
+    clearTimeout(timeoutId)
+    timeoutId = setTimeout(() => {
+      cancelAnimationFrame(updateId)
+      updateId = requestAnimationFrame(update)
+    }, ((32 / state.speedFactor()) - 1) * 10)
   } else {
     gameOver()
   }
 }
+
+state.paused(paused => paused ? cancelUpdate() : update())
+
+window.onkeydown = keyHandler({
+  space: () => state.paused.set(!state.paused()),
+  r: e => (e.metaKey || e.ctrlKey) ? false : state.shouldReload.set(true),
+  right: {
+    shift: () => Array(10).fill().forEach(update),
+    none: update,
+  },
+  up: state.incSpeed,
+  down: state.decSpeed,
+})
 
 window.update = update
 
@@ -247,10 +268,7 @@ const initPlayerData = nextMapState => {
   })
 }
 
-const prepareNewGame = () => Promise.all(players
-  .map(p => p.load)
-  .concat([ js(`${cdnBaseUrl}/pixi.js/4.5.1/pixi.min.js`) ]))
-.then(() => {
+const newGame = () => {
   const nextMapState = genMapFrom(empty)
 
   state.map.length = 0
@@ -259,11 +277,20 @@ const prepareNewGame = () => Promise.all(players
   initPlayerData(nextMapState)
   graphic.init(nextMapState, genMapFrom, players)
   update()
+}
+
+const initGame = () => Promise.all(players
+  .map(p => p.load)
+  .concat([ js(`${cdnBaseUrl}/pixi.js/4.5.1/pixi.min.js`) ]))
+.then(newGame)
+
+state.shouldReload(shouldReload => {
+  console.log('>>> Reloading...')
+  cancelUpdate()
+  state.reset()
+  newGame()
+  state.shouldReload.set(false)
 })
 
 shuffle(routeParams.users.sort()).forEach(addPlayer)
-prepareNewGame()
-
-/*
-
-/**/
+initGame()
