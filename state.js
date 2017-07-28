@@ -12,7 +12,10 @@ const decSpeed = () => speedFactor.set(Math.max(speedFactor() / 2, speedFactorBo
 const incSpeed = () => speedFactor.set(Math.min(speedFactor() * 2, speedFactorBounds[1]))
 
 const reset = () => {
-  players.forEach(p => p.dead = false)
+  players.forEach(p => {
+    p.dead = false
+    p.score = 0
+  })
   map.length = 0
 }
 
