@@ -230,7 +230,7 @@ const update = () => {
     timeoutId = setTimeout(() => {
       cancelAnimationFrame(updateId)
       updateId = requestAnimationFrame(update)
-    }, 500)
+    }, ((32 / state.speedFactor()) - 1) * 10)
   } else {
     gameOver()
   }
@@ -245,6 +245,8 @@ window.onkeydown = keyHandler({
     shift: () => Array(10).fill().forEach(update),
     none: update,
   },
+  up: state.incSpeed,
+  down: state.decSpeed,
 })
 
 window.update = update
