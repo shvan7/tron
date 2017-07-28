@@ -1,3 +1,4 @@
+const state = require('./state')
 const graphic = require('./graphics-super-hd')
 const hslToRgb = require('./hsl-to-rgb')
 const rseed = require('./rseed')
@@ -35,12 +36,8 @@ const genMapFrom = (fn = noOp) => reduceMap((x, y, map) => {
   return map
 }, Array(SIZE))
 
-const players = []
+const players = state.players
 const playerNames = Object.create(null)
-const state = {
-  players,
-  map: [],
-}
 
 const getMap = () => state.map[state.map.length - 1]
 const start = () => {}
@@ -221,10 +218,20 @@ const update = () => {
   state.map.push(generatedMap)
   graphic.update(players)
 
-  if (Object.keys(nextMove).length) {
-    setTimeout(() => requestAnimationFrame(update), 0)
+  if (Object.keys(nextMove).length && !state.paused()) {
+    setTimeout(() => requestAnimationFrame(update), 50)
   } else {
     gameOver()
+  }
+}
+
+state.paused(paused => paused || update())
+
+window.onkeydown = e => {
+  if (e.keyCode === 32) {
+    e.preventDefault()
+    state.paused.set(!state.paused())
+    return
   }
 }
 

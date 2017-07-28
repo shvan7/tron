@@ -1,3 +1,4 @@
+const state = require('./state')
 const { SIZE, CASE_SIZE: S } = require('./config')
 const h = require('izi/h')
 const names = Object.create(null)
@@ -25,6 +26,20 @@ const fadeTrail = () => {
   fadingRects = fadingRects.filter(isFading)
   fadingRects.forEach(fade)
 }
+
+const ctrlBtn = h('button.ctrl-btn', {
+  style: {
+    border: 'none',
+    padding: '8px',
+    backgroundColor: 'transparent',
+  }
+})
+
+const pauseBtn = ctrlBtn({
+  onclick: () => state.paused.set(!state.paused()),
+}, state.paused() ? '❙❙' : '►')
+
+state.paused(paused => pauseBtn.textContent = paused ? '❙❙' : '►')
 
 module.exports = {
   init: (mapState, genMapFrom, players) => {
@@ -54,7 +69,18 @@ module.exports = {
         '1px -1px black',
         '1px 1px black',
       ].join(', m')
-    }, name)).concat([ renderer.view ])))
+    }, name)).concat([
+      renderer.view,
+      // control bar
+      h.div.style({
+        position: 'absolute',
+        top: 0,
+        right: 0,
+        backgroundColor: 'white',
+      }, [
+        pauseBtn,
+      ])
+    ])))
 
     renderer.render(stage)
     return mapState
