@@ -43,9 +43,10 @@ module.exports = {
       transform: translate(x, y),
       transition: 'transform 0.1s',
       whiteSpace: 'pre',
-      color: '#'+ `00000${color.toString(16)}`.slice(-6),
+      color: 'white',
       opacity: 1,
-      background: 'rgba(0, 0, 0, 0.5)',
+      padding: '2px',
+      background: 'rgba(0, 0, 0, 0.25)',
       fontFamily: 'monospace',
       textShadow: [
         '-1px -1px black',
@@ -63,9 +64,12 @@ module.exports = {
     .sort((a, b) => b.score === a.score
       ? a.name - b.name
       : b.score - a.score)
-    .forEach(({ name, x, y, cause, score }, i, { length }) => {
+    .forEach(({ name, x, y, cause, score, color }, i, { length }) => {
       const el = names[name]
       el.textContent = `${getRank(i, players, length)} - ${_pad(name)} (${score})`
+      el.style.position = 'fixed'
+      el.style.color = '#'+ `00000${color.toString(16)}`.slice(-6)
+      el.style.background = 'black'
       el.style.transition = 'transform 0.5s ease-in, opacity 5s ease-out'
       el.style.transform = translate(0, i * 2)
     }),

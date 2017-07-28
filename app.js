@@ -55,7 +55,8 @@ const computePlayers = () => players.map(p => ({
   name: p.name,
   dead: p.dead,
   score: p.score,
-  pos: {x: p.x, y: p.y},
+  x: p.x,
+  y: p.y,
 }))
 
 const addPlayer = name => {
@@ -101,7 +102,7 @@ const addPlayer = name => {
           return err
         }
       }).catch(err => {
-        console.error('Unable to load player AI', err.message)
+        console.error('Unable to load player AI', err.stack)
         player.ai = () => ({})
       }),
 //    load: Promise.resolve(),
@@ -192,7 +193,7 @@ const update = () => {
         console.error(error)
         return player.cause = `AI error: ${error.message}`
       }
-      const pos = { x, y }
+      //const pos = { x, y }
       if (calculatedMoves.some(move =>
           move.player !== player && move.x === x && move.y === y)) {
         return player.cause = 'moved to the same position of another player'
@@ -230,16 +231,19 @@ const update = () => {
 window.update = update
 
 const empty = () => emptyTile
+const max = m => n => n > m ? max1(n - m) : n
+const max1 = max(1)
+const max2PI = max(Math.PI * 2)
 const initPlayerData = nextMapState => {
   const angle = (Math.PI * 2) / players.length
   const rate = (100 / players.length / 100)
+  const shift = angle * Math.random()
   players.forEach((player, i) => {
-    player.color = hslToRgb(i * rate, 1, 0.4)
-    const x = Math.round(Math.cos(angle * i) * (SIZE / 2 * 0.8) + (SIZE / 2))
-    const y = Math.round(Math.sin(angle * i) * (SIZE / 2 * 0.8) + (SIZE / 2))
+    player.color = hslToRgb(max1(i * rate + 0.25), 1, 0.4)
+    const x = Math.round(max2PI(Math.cos(angle * i + shift)) * (SIZE / 2 * 0.8) + (SIZE / 2))
+    const y = Math.round(max2PI(Math.sin(angle * i + shift)) * (SIZE / 2 * 0.8) + (SIZE / 2))
     player.x = x
     player.y = y
-    // player.index = nextMapState[x][y] = i
   })
 }
 
