@@ -51,15 +51,12 @@ const getDist = (a, b) => dist(a.x, b.x) + dist(a.y, b.y)
 const getName = p => p.name
 const getPlayerNames = () => players.map(getName)
 const isPlayerDead = p => p.dead
-const computePlayers = () => {
-  players.map(p => ({
-    name: p.name,
-    dead: p.dead,
-    score: p.score,
-    x: p.x,
-    y: p.y,
-  }))
-}
+const computePlayers = () => players.map(p => ({
+  name: p.name,
+  dead: p.dead,
+  score: p.score,
+  pos: {x: p.x, y: p.y},
+}))
 
 const addPlayer = name => {
   console.log('fetching: ', name)
