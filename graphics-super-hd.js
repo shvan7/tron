@@ -31,15 +31,26 @@ const ctrlBtn = h('button.ctrl-btn', {
   style: {
     border: 'none',
     padding: '8px',
+    width: '30px',
+    height: '30px',
+    outline: 0,
     backgroundColor: 'transparent',
+    color: 'white',
   }
 })
 
 const pauseBtn = ctrlBtn({
   onclick: () => state.paused.set(!state.paused()),
-}, state.paused() ? '❙❙' : '►')
+  title: 'space to pause',
+}, state.paused() ? '▷' : '❘❘')
 
-state.paused(paused => pauseBtn.textContent = paused ? '❙❙' : '►')
+state.paused(paused => pauseBtn.textContent = paused ? '▷' : '❘❘')
+
+const reloadBtn = ctrlBtn({
+  onclick: () => state.shouldReload.set(true),
+  title: 'r to reload',
+}, '↺')
+
 
 module.exports = {
   init: (mapState, genMapFrom, players) => {
@@ -76,9 +87,10 @@ module.exports = {
         position: 'absolute',
         top: 0,
         right: 0,
-        backgroundColor: 'white',
+        backgroundColor: 'rgba(255, 255, 255, 0.1)',
       }, [
         pauseBtn,
+        reloadBtn,
       ])
     ])))
 
@@ -101,8 +113,6 @@ module.exports = {
     }),
   update: nextMoves => {
     nextMoves.forEach(({ name, x, y, color, dead }) => {
-      //const { style } = map[y][x]
-
       const rect = new PIXI.Graphics()
       rect.beginFill(color)
       rect.alpha = 0.3
