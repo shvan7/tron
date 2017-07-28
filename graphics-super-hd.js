@@ -51,10 +51,9 @@ const reloadBtn = ctrlBtn({
   title: 'r to reload',
 }, '↺')
 
-
 module.exports = {
   init: (mapState, genMapFrom, players) => {
-    renderer = PIXI.autoDetectRenderer(S * SIZE, S * SIZE)
+    renderer || (renderer = PIXI.autoDetectRenderer(S * SIZE, S * SIZE))
     stage = new PIXI.Container()
     h.replaceContent(document.body, h.div.style({
       display: 'flex',
