@@ -279,6 +279,7 @@ const newGame = () => {
   state.map.push(nextMapState)
 
   initPlayerData(nextMapState)
+  shuffle(players)
   graphic.init(nextMapState, genMapFrom, players)
   update()
 }
@@ -296,5 +297,5 @@ state.shouldReload(shouldReload => {
   state.shouldReload.set(false)
 })
 
-shuffle(state.users.sort()).forEach(addPlayer)
+state.users.forEach(addPlayer)
 initGame()
