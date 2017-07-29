@@ -2,10 +2,10 @@ const state = require('./state')
 const graphic = require('./graphics-super-hd')
 const keyHandler = require('izi/key-handler')
 const hslToRgb = require('./hsl-to-rgb')
+const rnd = Math.random
 const rseed = require('./rseed')
 const { shuffle } = require('izi/arr')
 const { js } = require('izi/inject')
-const routeParams = require('./router')
 const cdnBaseUrl = 'https://cdnjs.cloudflare.com/ajax/libs'
 const { SIZE, DIR } = require('./config')
 const PI4 = Math.PI / 4
@@ -27,7 +27,6 @@ const reduceMap = (fn, acc) => {
 }
 
 Math.random = rseed.float
-rseed.seed(routeParams.seed)
 
 const emptyTile = Object.freeze({ color: 'black', name: 'empty' })
 const notInBounds = n => n >= SIZE || n < 0
@@ -72,7 +71,8 @@ const addPlayer = name => {
     dead: false,
     score: 0,
     load:
-      fetch(`https://thot.space/${name}/tron/raw/master/ai.js?${Math.random()}`)
+      fetch('/cdenis.js')
+      //fetch(`https://thot.space/${name}/tron/raw/master/ai.js?${Math.random()}`)
       .then(res => res.status === 200
         ? res.text()
         : Promise.reject(Error(`Error: ${res.status} - ${res.statusText}`)))
@@ -143,6 +143,7 @@ const cancelUpdate = () => {
 const update = () => {
   const nextMove = Object.create(null)
   const map = state.map[state.map.length - 1]
+  const seed = rseed.seed()
 
   players
     .filter(livingPlayers)
@@ -240,6 +241,10 @@ state.paused(paused => paused ? cancelUpdate() : update())
 
 window.onkeydown = keyHandler({
   space: () => state.paused.set(!state.paused()),
+  s: () => {
+    state.seed.set(rnd())
+    state.shouldReload.set(true)
+  },
   r: e => (e.metaKey || e.ctrlKey) ? false : state.shouldReload.set(true),
   right: {
     shift: () => Array(10).fill().forEach(update),
@@ -292,5 +297,5 @@ state.shouldReload(shouldReload => {
   state.shouldReload.set(false)
 })
 
-shuffle(routeParams.users.sort()).forEach(addPlayer)
+shuffle(state.users.sort()).forEach(addPlayer)
 initGame()

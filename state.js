@@ -1,27 +1,66 @@
 const observable = require('izi/emiter/observ')
+const map = require('izi/collection/map')
+const rseed = require('./rseed')
+const router = require('./router')
+
+const seed = observable(rseed.seed())
+seed.set = (setSeed => s => setSeed(rseed.seed(Number(s))))(seed.set)
 
 const defaults = {
-  speedFactor: 8,
+  speedFactor: 32,
+  users: [
+    'adarinot',
+    'bro',
+    'cdenis',
+    'fbertoia',
+    'kbennani',
+    'mgregoir',
+    'rchoquer',
+    'rfautier',
+    'tgelu',
+    'xpetit',
+    'ycribier',
+  ],
+  seed: seed(),
 }
+
+const urlParams = (parsers =>
+  map((val, key) => (parsers[key] || noOp)(val) || defaults[key], router.get()))
+({ users: u => u.split(','), seed: seed.set })
+
 const players = []
-const map = []
+const history = []
 const speedFactor = observable.check(defaults.speedFactor)
 const speedFactorBounds = [0.25, 32]
 
 const decSpeed = () => speedFactor.set(Math.max(speedFactor() / 2, speedFactorBounds[0]))
 const incSpeed = () => speedFactor.set(Math.min(speedFactor() * 2, speedFactorBounds[1]))
 
+let previousSeed = seed()
 const reset = () => {
+  const newSeed = seed()
+  if (newSeed !== previousSeed) {
+    router.set({ seed: newSeed, users: urlParams.users.sort() })
+    previousSeed = newSeed
+  } else {
+    rseed.seed(previousSeed)
+  }
+
   players.forEach(p => {
     p.dead = false
     p.score = 0
   })
-  map.length = 0
+
+  history.length = 0
 }
+
+router.set({ seed: previousSeed, users: urlParams.users.sort() })
 
 module.exports = {
   players,
-  map,
+  seed,
+  users: urlParams.users,
+  map: history,
   paused: observable.check(true),
   speedFactor,
   incSpeed,

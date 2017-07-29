@@ -11,8 +11,10 @@ const nextRange = (start, end) =>
 
 module.exports = Object.assign(nextFloat, {
   seed: rate => {
-    _seed = Math.floor((rate || randomRate) * (_m-1))
-    return rate ? rate : randomRate
+    if (!rate) return _seed
+    return _seed = rate < 1
+      ? Math.floor((rate || randomRate) * (_m-1))
+      : _seed = rate
   },
   pick: arr => arr[nextRange(0, arr.length)],
   float: nextFloat,

@@ -1,27 +1,20 @@
 const qs = require('izi/query-string')
-const defaultsParams = {
-  seed: Math.random(),
-  users: [
-    'fbertoia',
-    'bro',
-    'rchoquer',
-    'kbennani',
-    'tgelu',
-    'adarinot',
-    'xpetit',
-    'mgregoir',
-    'rfautier',
-    'ycribier',
-    'cdenis'
-  ],
+
+let skip
+const updateRoute = obj => {
+  skip = true
+  window.location.hash = '?'+ Object.keys(obj)
+    .sort()
+    .map(key => `${key}=${obj[key]}`)
+    .join('&')
 }
 
-const fromUrl = qs()
-const params = module.exports = {
-  seed: fromUrl.seed ? Number(fromUrl.seed) : defaultsParams.seed,
-  users: fromUrl.users ? fromUrl.users.split(',') : defaultsParams.users,
+window.addEventListener('hashchange', () => skip
+  ? (skip = false)
+  : window.location.reload(1))
+
+module.exports = {
+  get: qs,
+  set: updateRoute,
 }
-window.location.hash = `?users=${params.users.join()}&seed=${params.seed}`
-window.addEventListener('hashchange', () => {
-  window.location.reload(1)
-})
+
