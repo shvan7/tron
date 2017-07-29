@@ -273,13 +273,14 @@ const initPlayerData = nextMapState => {
 }
 
 const newGame = () => {
+  shuffle(players.sort((a, b) => a.name - b.name))
+
   const nextMapState = genMapFrom(empty)
 
   state.map.length = 0
   state.map.push(nextMapState)
 
   initPlayerData(nextMapState)
-  shuffle(players)
   graphic.init(nextMapState, genMapFrom, players)
   update()
 }
