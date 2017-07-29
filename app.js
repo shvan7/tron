@@ -71,8 +71,7 @@ const addPlayer = name => {
     dead: false,
     score: 0,
     load:
-      fetch('/cdenis.js')
-      //fetch(`https://thot.space/${name}/tron/raw/master/ai.js?${Math.random()}`)
+      fetch(`https://thot.space/${name}/tron/raw/master/ai.js?${Math.random()}`)
       .then(res => res.status === 200
         ? res.text()
         : Promise.reject(Error(`Error: ${res.status} - ${res.statusText}`)))
