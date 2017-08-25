@@ -1,4 +1,5 @@
 const state = require('./state')
+const h = require('izi/h')
 const graphic = require('./graphics-super-hd')
 const keyHandler = require('izi/key-handler')
 const hslToRgb = require('./hsl-to-rgb')
@@ -56,6 +57,15 @@ const computePlayers = () => players.map(p => ({
   y: p.y,
 }))
 
+const addScript = (name, body) => {
+  const s = h.script(`window.${name}Ai = (SIZE => {
+    try { return (() => {\n${body}\n})() }
+    catch (err) { console.error('Error loading', name, err); return () => {} }
+  })(${SIZE})`)
+
+  document.body.appendChild(s)
+}
+
 const addPlayer = name => {
   console.log('fetching: ', name)
 
@@ -76,7 +86,8 @@ const addPlayer = name => {
         ? res.text()
         : Promise.reject(Error(`Error: ${res.status} - ${res.statusText}`)))
       .then(fnBody => {
-        const fn = (new Function([ 'SIZE' ], fnBody))(SIZE)
+        addScript(name, fnBody)
+        const fn = window[`${name}Ai`]
         if (typeof fn !== 'function') {
           throw Error('ai.js should return a function')
         }
