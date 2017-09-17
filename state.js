@@ -2,31 +2,49 @@ const observable = require('izi/emiter/observ')
 const map = require('izi/collection/map')
 const rseed = require('./rseed')
 const router = require('./router')
+const knownAi = [
+  'abarnat',
+  'abousque',
+  'adarinot',
+  'araveend',
+  'bro',
+  'cdenis',
+  'fbertoia',
+  'fsauvage',
+  'kbennani',
+  'knguyen',
+  'ljahier',
+  'mallano',
+  'mestevez',
+  'mgregoir',
+  'overetou',
+  'rchoquer',
+  'rfautier',
+  'rpaegelo',
+  'sdutertr',
+  'smj',
+  'tgelu',
+  'vbillard',
+  'xpetit',
+  'ycribier',
+  'ygromith',
+  'zabdalla',
+]
 
 const seed = observable(rseed.seed())
 seed.set = (setSeed => s => setSeed(rseed.seed(Number(s))))(seed.set)
 
 const defaults = {
   speedFactor: 32,
-  users: [
-    'adarinot',
-    'bro',
-    'cdenis',
-    'fbertoia',
-    'kbennani',
-    'mgregoir',
-    'rchoquer',
-    'rfautier',
-    'tgelu',
-    'xpetit',
-    'ycribier',
-  ],
+  users: [],
   seed: seed(),
 }
 
 const urlParams = (parsers =>
   map((val, key) => (parsers[key] || noOp)(val) || defaults[key], router.get()))
-({ users: u => u.split(','), seed: seed.set })
+({ users: u => (u || '').split(','), seed: seed.set, refetch: v => v === 'true', })
+
+urlParams.users || (urlParams.users = knownAi)
 
 const players = []
 const history = []
@@ -45,6 +63,7 @@ const reset = () => {
   } else {
     rseed.seed(previousSeed)
   }
+  window.location.reload()
 
   players.forEach(p => {
     p.dead = false
@@ -57,6 +76,7 @@ const reset = () => {
 router.set({ seed: previousSeed, users: urlParams.users.sort() })
 
 module.exports = {
+  refetch: Boolean(urlParams.refetch),
   players,
   seed,
   users: urlParams.users,

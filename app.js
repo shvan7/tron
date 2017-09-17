@@ -27,6 +27,7 @@ const reduceMap = (fn, acc) => {
   return acc
 }
 
+const unseededRandom = Math.random
 Math.random = rseed.float
 
 const emptyTile = Object.freeze({ color: 'black', name: 'empty' })
@@ -66,6 +67,11 @@ const addScript = (name, body) => {
   document.body.appendChild(s)
 }
 
+const cacheType = state.refetch ? `?${unseededRandom()}` : ''
+const getAiUrl = window.location.host === 'thot.space'
+  ? name => `https://thot.space/${name}/tron/raw/master/ai.js${cacheType}`
+  : name => `${name}-ai.js${cacheType}`
+
 const addPlayer = name => {
   console.log('fetching: ', name)
 
@@ -80,8 +86,7 @@ const addPlayer = name => {
     color: 'purple',
     dead: false,
     score: 0,
-    load:
-      fetch(`https://thot.space/${name}/tron/raw/master/ai.js?${Math.random()}`)
+    load: fetch(getAiUrl(name))
       .then(res => res.status === 200
         ? res.text()
         : Promise.reject(Error(`Error: ${res.status} - ${res.statusText}`)))
