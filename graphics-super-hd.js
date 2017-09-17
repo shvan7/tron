@@ -2,11 +2,18 @@ const state = require('./state')
 const { SIZE, CASE_SIZE: S } = require('./config')
 const h = require('izi/h')
 const names = Object.create(null)
-let stage, renderer
+const canvas = h.canvas({ width: `${SIZE * S}`, height: `${SIZE * S}`})
+const ctx = canvas.getContext('2d')
 const createCaseEl = h.style({
   height: `${S}px`,
   width: `${S}px`,
 })
+
+const draw = rect => {
+  rect.drawCount++
+  ctx.fillStyle = '#'+ `00000${rect.color.toString(16)}`.slice(-6) + '04'
+  ctx.fillRect(rect.x * S, rect.y * S, S, S)
+}
 
 Object.assign(document.body.style, {
   margin: 0,
@@ -20,11 +27,11 @@ const _padNumber = n => ` #${n}`.slice(-3)
 const _pad = str => `${str}        `.slice(0, 10)
 const getRank = (i, players, length) =>
   _padNumber(players.length - (length - (i + 1)))
-const isFading = rect => rect.alpha <= 1
-const fade = rect => rect.alpha += 0.0075
+const isFading = rect => rect.drawCount < 128
+
 const fadeTrail = () => {
   fadingRects = fadingRects.filter(isFading)
-  fadingRects.forEach(fade)
+  fadingRects.forEach(draw)
 }
 
 const ctrlBtn = h('button.ctrl-btn', {
@@ -69,8 +76,8 @@ state.speedFactor(speedFactor => speedDisplay.textContent = `speed x${state.spee
 
 module.exports = {
   init: (mapState, genMapFrom, players) => {
-    renderer || (renderer = PIXI.autoDetectRenderer(S * SIZE, S * SIZE))
-    stage = new PIXI.Container()
+    ctx.fillStyle = 'black'
+    ctx.fillRect(0, 0, SIZE * S, SIZE * S)
     h.replaceContent(document.body, h.div.style({
       display: 'flex',
       fontFamily: 'monospace',
@@ -95,7 +102,7 @@ module.exports = {
         '1px 1px black',
       ].join(', m')
     }, name)).concat([
-      renderer.view,
+      canvas,
       // control bar
       h.div.style({
         position: 'absolute',
@@ -109,7 +116,6 @@ module.exports = {
       ])
     ])))
 
-    renderer.render(stage)
     return mapState
   },
   setScore: players => players
@@ -124,24 +130,14 @@ module.exports = {
       el.style.transform = translate(0, i * 2)
     }),
   update: nextMoves => {
-    nextMoves.forEach(({ name, x, y, color, dead }) => {
-      const rect = new PIXI.Graphics()
-      rect.beginFill(color)
-      rect.alpha = 0.3
-      rect.drawRect(x * S, y * S, S, S)
-      rect.endFill()
-      stage.addChild(rect)
-      fadingRects.push(rect)
-      dead || (names[name].style.transform = translate(x, y))
+    nextMoves.forEach(rect => {
+      const r = { x: rect.x, y: rect.y, drawCount: 0, color: rect.color }
+      draw(r)
+      fadingRects.push(r)
+      rect.dead || (names[rect.name].style.transform = translate(rect.x, rect.y))
     })
     fadeTrail()
-    renderer.render(stage)
   },
-  end: () => {
-    setInterval(() => {
-      fadeTrail()
-      renderer.render(stage)
-    }, 16)
-  }
+  end: () => setInterval(fadeTrail, 16),
 }
 

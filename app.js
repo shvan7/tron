@@ -6,8 +6,6 @@ const hslToRgb = require('./hsl-to-rgb')
 const rnd = Math.random
 const rseed = require('./rseed')
 const { shuffle } = require('izi/arr')
-const { js } = require('izi/inject')
-const cdnBaseUrl = 'https://cdnjs.cloudflare.com/ajax/libs'
 const { SIZE, DIR } = require('./config')
 const PI4 = Math.PI / 4
 const sget = (key, src) => src && (src[key] || (src[key] = Object.create(null)))
@@ -301,10 +299,7 @@ const newGame = () => {
   update()
 }
 
-const initGame = () => Promise.all(players
-  .map(p => p.load)
-  .concat([ js(`${cdnBaseUrl}/pixi.js/4.5.1/pixi.min.js`) ]))
-.then(newGame)
+const initGame = () => Promise.all(players.map(p => p.load)).then(newGame)
 
 state.shouldReload(shouldReload => {
   console.log('>>> Reloading...')
