@@ -11,7 +11,7 @@ const createCaseEl = h.style({
 
 const draw = rect => {
   rect.drawCount++
-  ctx.fillStyle = '#'+ `00000${rect.color.toString(16)}`.slice(-6) + '04'
+  ctx.fillStyle = '#'+ `00000${rect.color.toString(16)}`.slice(-6) // + '04'
   ctx.fillRect(rect.x * S, rect.y * S, S, S)
 }
 
@@ -133,10 +133,10 @@ module.exports = {
     nextMoves.forEach(rect => {
       const r = { x: rect.x, y: rect.y, drawCount: 0, color: rect.color }
       draw(r)
-      fadingRects.push(r)
+      //fadingRects.push(r)
       rect.dead || (names[rect.name].style.transform = translate(rect.x, rect.y))
     })
-    fadeTrail()
+    //fadeTrail()
   },
   end: () => setInterval(fadeTrail, 16),
 }
