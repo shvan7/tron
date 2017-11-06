@@ -141,7 +141,6 @@ const gameOver = () => {
 }
 
 const livingPlayers = player => !player.dead
-window.players = players
 const addPos = (a, b) => ({ x: a.x + b.x, y: a.y + b.y })
 const clamp1 = (a, b) => Math.sign(a) + b
 const getAngle = (a, b) => Math.atan2(b.y - a.y, b.x - a.x)
@@ -266,8 +265,6 @@ window.onkeydown = keyHandler({
   up: state.incSpeed,
   down: state.decSpeed,
 })
-
-window.update = update
 
 const empty = () => emptyTile
 const max = m => n => n > m ? max1(n - m) : n
