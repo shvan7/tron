@@ -1,4 +1,4 @@
-const qs = require('izi/query-string')
+import qs from './izi/query-string.js'
 
 let skip
 const updateRoute = obj => {
@@ -13,7 +13,7 @@ window.addEventListener('hashchange', () => skip
   ? (skip = false)
   : window.location.reload(1))
 
-module.exports = {
+export default {
   get: qs,
   set: updateRoute,
 }

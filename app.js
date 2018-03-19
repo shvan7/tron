@@ -1,12 +1,12 @@
-const state = require('./state')
-const h = require('izi/h')
-const graphic = require('./graphics-super-hd')
-const keyHandler = require('izi/key-handler')
-const hslToRgb = require('./hsl-to-rgb')
-const rnd = Math.random
-const rseed = require('./rseed')
-const { shuffle } = require('izi/arr')
-const { SIZE, DIR } = require('./config')
+import state from './state.js'
+import h from './izi/h.js'
+import graphic from './graphics-super-hd.js'
+import { shuffle } from './izi/arr.js'
+import keyHandler from './izi/key-handler.js'
+import hslToRgb from './hsl-to-rgb.js'
+import rseed from './rseed.js'
+import { SIZE, DIR } from './config.js'
+
 const PI4 = Math.PI / 4
 const sget = (key, src) => src && (src[key] || (src[key] = Object.create(null)))
 const sort = fn => arr => arr.slice(0).sort(fn)
@@ -25,7 +25,7 @@ const reduceMap = (fn, acc) => {
   return acc
 }
 
-const unseededRandom = Math.random
+const rnd = Math.random
 Math.random = rseed.float
 
 const emptyTile = Object.freeze({ color: 'black', name: 'empty' })
@@ -39,7 +39,9 @@ const genMapFrom = (fn = noOp) => reduceMap((x, y, map) => {
 const players = state.players
 const playerNames = Object.create(null)
 
-const getMap = () => state.map[state.map.length - 1]
+window.state = state
+
+const getMap = () => state.map
 const start = () => {}
 
 // get the manathan distance between 2 points
@@ -65,9 +67,9 @@ const addScript = (name, body) => {
   document.body.appendChild(s)
 }
 
-const cacheType = state.refetch ? `?${unseededRandom()}` : ''
-const getAiUrl = window.location.host === 'thot.space'
-  ? name => `https://thot.space/${name}/tron/raw/master/ai.js${cacheType}`
+const cacheType = state.refetch ? `?${rnd()}` : ''
+const getAiUrl = window.location.host === 'github.io'
+  ? name => `https://raw.githubusercontent.com/${name}/tron/master/ai.js${cacheType}`
   : name => `${name}-ai.js${cacheType}`
 
 const addPlayer = name => {
@@ -154,7 +156,7 @@ const cancelUpdate = () => {
 }
 const update = () => {
   const nextMove = Object.create(null)
-  const map = state.map[state.map.length - 1]
+  const map = state.map
   const seed = rseed.seed()
 
   players
@@ -235,7 +237,7 @@ const update = () => {
       ? nextMove[x][y]
       : map[x][y])
 
-  state.map.push(generatedMap)
+  state.map = generatedMap
   graphic.update(players)
 
   if (Object.keys(nextMove).length && !state.paused()) {
@@ -288,8 +290,7 @@ const newGame = () => {
 
   const nextMapState = genMapFrom(empty)
 
-  state.map.length = 0
-  state.map.push(nextMapState)
+  state.map = nextMapState
 
   initPlayerData(nextMapState)
   graphic.init(nextMapState, genMapFrom, players)

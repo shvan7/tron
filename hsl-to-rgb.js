@@ -27,4 +27,4 @@ const hslToRgb = (h, s, l) => {
   return toInt(toRange(r), toRange(g), toRange(b))
 }
 
-module.exports = hslToRgb
+export default hslToRgb

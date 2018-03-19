@@ -1,6 +1,6 @@
-const state = require('./state')
-const { SIZE, CASE_SIZE: S } = require('./config')
-const h = require('izi/h')
+import state from './state.js'
+import { SIZE, CASE_SIZE as S } from './config.js'
+import h from './izi/h.js'
 const names = Object.create(null)
 const canvas = h.canvas({ width: `${SIZE * S}`, height: `${SIZE * S}`})
 const ctx = canvas.getContext('2d')
@@ -9,15 +9,17 @@ const createCaseEl = h.style({
   width: `${S}px`,
 })
 
+const memo = fn => (c => a => c[a] || (c[a] = fn(a)))(Object.create(null))
+const toHex = memo(color => '#'+ `00000${color.toString(16)}`.slice(-6))
 const draw = rect => {
   rect.drawCount++
-  ctx.fillStyle = '#'+ `00000${rect.color.toString(16)}`.slice(-6) // + '04'
+  ctx.fillStyle = toHex(rect.color)
   ctx.fillRect(rect.x * S, rect.y * S, S, S)
 }
 
 Object.assign(document.body.style, {
   margin: 0,
-  background: 'darkgrey',
+  background: '#111',
 })
 
 const translate = (x, y) => `translate(${~~(x * S)}px, ${~~(y * S)}px)`
@@ -73,8 +75,7 @@ const speedDisplay = h.span.style({
 
 state.speedFactor(speedFactor => speedDisplay.textContent = `speed x${state.speedFactor()}`)
 
-
-module.exports = {
+export default {
   init: (mapState, genMapFrom, players) => {
     ctx.fillStyle = 'black'
     ctx.fillRect(0, 0, SIZE * S, SIZE * S)
@@ -83,7 +84,7 @@ module.exports = {
       fontFamily: 'monospace',
       flexWrap: 'wrap',
       position: 'relative',
-      margin: '0 auto',
+      margin: '0 0 0 auto',
       width: `${S * SIZE}px`,
     }, players.map(({ name, x, y, color }) => names[name] = h.div.style({
       position: 'absolute',
@@ -92,7 +93,7 @@ module.exports = {
       transform: translate(x, y),
       transition: 'transform 0.1s',
       whiteSpace: 'pre',
-      color: '#'+ `00000${color.toString(16)}`.slice(-6),
+      color: toHex(color),
       opacity: 1,
       background: 'rgba(0, 0, 0, 0.25)',
       textShadow: [
@@ -128,6 +129,7 @@ module.exports = {
       el.textContent = `${getRank(i, players, length)} - ${_pad(name)} (${score})`
       el.style.transition = 'transform 0.5s ease-in, opacity 5s ease-out'
       el.style.transform = translate(0, i * 2)
+      el.style.position = 'fixed'
     }),
   update: nextMoves => {
     nextMoves.forEach(rect => {

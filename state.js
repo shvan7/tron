@@ -1,7 +1,7 @@
-const observable = require('izi/emiter/observ')
-const map = require('izi/collection/map')
-const rseed = require('./rseed')
-const router = require('./router')
+import observable from './izi/observ.js'
+import map from './izi/map.js'
+import rseed from './rseed.js'
+import router from './router.js'
 const knownAi = [
   'abarnat',
   'abousque',
@@ -75,7 +75,7 @@ const reset = () => {
 
 router.set({ seed: previousSeed, users: urlParams.users.sort() })
 
-module.exports = {
+export default {
   refetch: Boolean(urlParams.refetch),
   players,
   seed,

@@ -9,7 +9,7 @@ const nextFloat = () => nextInt() / (_m - 1)
 const nextRange = (start, end) =>
   start + Math.floor(nextInt() / _m * end - start)
 
-module.exports = Object.assign(nextFloat, {
+export default Object.assign(nextFloat, {
   seed: rate => {
     if (!rate) return _seed
     return _seed = rate < 1
