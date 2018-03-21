@@ -17,4 +17,3 @@ export default {
   get: qs,
   set: updateRoute,
 }
-

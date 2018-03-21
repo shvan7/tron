@@ -2,34 +2,6 @@ import observable from './izi/observ.js'
 import map from './izi/map.js'
 import rseed from './rseed.js'
 import router from './router.js'
-const knownAi = [
-  'abarnat',
-  'abousque',
-  'adarinot',
-  'araveend',
-  'bro',
-  'cdenis',
-  'fbertoia',
-  'fsauvage',
-  'kbennani',
-  'knguyen',
-  'ljahier',
-  'mallano',
-  'mestevez',
-  'mgregoir',
-  'overetou',
-  'rchoquer',
-  'rfautier',
-  'rpaegelo',
-  'sdutertr',
-  'smj',
-  'tgelu',
-  'vbillard',
-  'xpetit',
-  'ycribier',
-  'ygromith',
-  'zabdalla',
-]
 
 const seed = observable(rseed.seed())
 seed.set = (setSeed => s => setSeed(rseed.seed(Number(s))))(seed.set)
@@ -44,7 +16,7 @@ const urlParams = (parsers =>
   map((val, key) => (parsers[key] || noOp)(val) || defaults[key], router.get()))
 ({ users: u => (u || '').split(','), seed: seed.set, refetch: v => v === 'true', })
 
-urlParams.users || (urlParams.users = knownAi)
+urlParams.users || (urlParams.users = [ 'js-training' ])
 
 const players = []
 const history = []

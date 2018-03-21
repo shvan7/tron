@@ -1,10 +1,12 @@
 import state from './state.js'
 import h from './izi/h.js'
+import { isNum } from './izi/is.js'
 import graphic from './graphics-super-hd.js'
 import { shuffle } from './izi/arr.js'
 import keyHandler from './izi/key-handler.js'
 import hslToRgb from './hsl-to-rgb.js'
 import rseed from './rseed.js'
+import aiLoader from './ai-loader.js'
 import { SIZE, DIR } from './config.js'
 
 const PI4 = Math.PI / 4
@@ -13,7 +15,11 @@ const sort = fn => arr => arr.slice(0).sort(fn)
 const noOp = () => {}
 sort.byScore = sort((a,b) => a.score - b.score)
 
-const tryCatch = (fn, ...args) => { try { return fn(...args) } catch(err) { return err } }
+const tryCatch = (fn, ...args) => {
+  try { return fn(...args) }
+  catch(err) { return err }
+}
+
 const reduceMap = (fn, acc) => {
   let x = -1, y
   while (++x < SIZE) {
@@ -50,92 +56,39 @@ const getDist = (a, b) => dist(a.x, b.x) + dist(a.y, b.y)
 const getName = p => p.name
 const getPlayerNames = () => players.map(getName)
 const isPlayerDead = p => p.dead
-const computePlayers = () => players.map(p => ({
-  name: p.name,
-  dead: p.dead,
-  score: p.score,
-  x: p.x,
-  y: p.y,
-}))
+const computePlayer = ({ name, dead, x, y }, id) =>
+  `{"name":"${name}","dead":${dead},"x":${x},"y":${y},"id":${id + 1}}`
 
-const addScript = (name, body) => {
-  const s = h.script(`window.${name}Ai = (SIZE => {
-    try { return (() => {\n${body}\n})() }
-    catch (err) { console.error('Error loading', name, err); return () => {} }
-  })(${SIZE})`)
-
-  document.body.appendChild(s)
-}
-
-const cacheType = state.refetch ? `?${rnd()}` : ''
-const getAiUrl = window.location.host === 'github.io'
-  ? name => `https://raw.githubusercontent.com/${name}/tron/master/ai.js${cacheType}`
-  : name => `${name}-ai.js${cacheType}`
-
-const addPlayer = name => {
+const addPlayer = async name => {
   console.log('fetching: ', name)
 
-  let indexedName = name
+  let id = name
   if (playerNames[name]) {
     const regex = new RegExp(`^${name}(\d+)?`)
     const len = getPlayerNames().filter(n => regex.test(n)).length
-    indexedName = `${name}${len > 0 ? len + 1 : ''}`
+    id = `${name}${len > 0 ? len + 1 : ''}`
   }
-  const player = playerNames[indexedName] = {
-    name: indexedName,
+  const player = playerNames[id] = {
+    name: id,
     color: 'purple',
     dead: false,
     score: 0,
-    load: fetch(getAiUrl(name))
-      .then(res => res.status === 200
-        ? res.text()
-        : Promise.reject(Error(`Error: ${res.status} - ${res.statusText}`)))
-      .then(fnBody => {
-        addScript(name, fnBody)
-        const fn = window[`${name}Ai`]
-        if (typeof fn !== 'function') {
-          throw Error('ai.js should return a function')
-        }
-        try {
-          player.ai = mapState => fn({
-            getPos: ({ x: x = 0, y: y = 0 } = {}) => ({
-              x: player.x + x,
-              y: player.y + y,
-            }),
-            isFree: ({ x, y }) => inBounds(x)
-              && inBounds(y)
-              && mapState[x][y] === emptyTile,
-            getDist,
-            reduceMap,
-            players: computePlayers(),
-            reduceMapCheck: fn => reduceMap((x, y, acc) =>
-              fn(x, y, mapState[x][y] === emptyTile, acc))
-          })
-        } catch(err) {
-          return err
-        }
-      }).catch(err => {
-        console.error('Unable to load player AI', err.stack)
-        player.ai = () => ({})
-      }),
-//    load: Promise.resolve(),
+    load: aiLoader({ name, id, seed: state.seed() })
+      .then(ai => player.ai = ai)
+      .catch(err => player.ai = () => Promise.reject(err)),
   }
 
   players.push(player)
+
+  return player
 }
 
-//const calculatePosition = () =>
-
-const killPlayer = p => {
-  console.log(`${p.name} died because he ${p.cause} at ${p.x} ${p.y}`)
+const killPlayer = (p, cause, x = p.x, y = p.y) => {
+  console.log(`${p.name} died because he ${cause} at ${x} ${y}`)
+  p.cause = cause
   p.dead = true
   graphic.setScore(players)
 }
-
-/*
-getTile(x, y)
-forEachTile( { x, y, content:  } )
-*/
 
 const gameOver = () => {
   graphic.end()
@@ -143,8 +96,6 @@ const gameOver = () => {
 }
 
 const livingPlayers = player => !player.dead
-const addPos = (a, b) => ({ x: a.x + b.x, y: a.y + b.y })
-const clamp1 = (a, b) => Math.sign(a) + b
 const getAngle = (a, b) => Math.atan2(b.y - a.y, b.x - a.x)
 const _0 = n => n < 10 ? `0${n}` : String(n)
 const pad = str => `        ${str}`.slice(-8)
@@ -154,101 +105,65 @@ const cancelUpdate = () => {
   cancelAnimationFrame(updateId)
   clearTimeout(timeoutId)
 }
-const update = () => {
+
+const stringifyTile = tile => tile === emptyTile ? 0 : 1
+const stringifyRow = line => line.map(stringifyTile)
+const update = async () => {
   const nextMove = Object.create(null)
-  const map = state.map
   const seed = rseed.seed()
+  const jsonMap = `{
+    "players": [${players.map(computePlayer)}],
+    "state": [${state.map.map(stringifyRow)}]
+  }`
+  // new SharedArrayBuffer(1024)
 
-  players
-    .filter(livingPlayers)
-    .map(player => {
-      const aiRet = tryCatch(player.ai, map)
-      if (aiRet instanceof Error) {
-        return { error: aiRet, player }
-      }
-      const dir = aiRet && (typeof aiRet === 'object')
-        ? aiRet
-        : addPos(player, DIR[aiRet] || { x: 0, y: 0})
-
-      if (!dir) {
-        console.log(player.name, 'returned an invalid direction', aiRet)
-      }
-
-      const { x: x = 0, y: y = 0 } =  dir || {}
-      let pos = { x, y }
-      if (player.px === pos.x && player.py === y) {
-        player.positionList = []
-
-      } else {
-        player.px = x
-        player.py = y
-        if (getDist(pos, player) > 1) {
-          const angle = getAngle(player, pos)
-          console.log({
-            angle,
-            x1: player.x,
-            y1: player.y,
-            x2: pos.x,
-            y2: pos.y,
-          })
-
-          if (angle > PI4 && angle <= (3 * PI4)) {
-            pos = addPos(player, DIR.down)
-          } else if (angle > (PI4 * 3) && angle <= 5 * PI4) {
-            pos = addPos(player, DIR.left)
-          } else if (angle > (5 * PI4) && angle <= 7 * PI4) {
-            pos = addPos(player, DIR.up)
-          } else {
-            pos = addPos(player, DIR.right)
-          }
-        }
-      }
-      pos.player = player
-
-      return pos
-    })
-    .filter(({ player, x, y, error }, _, calculatedMoves) => {
-      if (error) {
-        console.error(error)
-        return player.cause = `AI error: ${error.message}`
-      }
-      //const pos = { x, y }
-      if (calculatedMoves.some(move =>
-          move.player !== player && move.x === x && move.y === y)) {
-        return player.cause = 'moved to the same position of another player'
+  const playersLeft = players.filter(livingPlayers)
+  if (!playersLeft.length) {
+    clearTimeout(timeoutId)
+    return gameOver()
+  }
+  if (state.paused()) {
+    clearTimeout(timeoutId)
+    return timeoutId = setTimeout(update, 50)
+  }
+  await Promise.all(playersLeft.map(player => player.ai(jsonMap)
+    .then(({ data }) => {
+      const { x, y } = JSON.parse(data)
+      if (!isNum(x) || !isNum(y)) {
+        throw Error('Bad AI return value, expect { x, y } got '+ data)
       }
       if (notInBounds(x) || notInBounds(y)) {
-        return player.cause = 'went out of bounds'
+        return killPlayer(player, 'moved out of the map', x, y)
       }
-
-      if (map[x][y] !== emptyTile) {
-        return player.cause = 'crashed on' + map[x][y].name
+      const { x: px, y: py } = player
+      if (!(x === (px - 1) && y === py)
+        && !(x === (px + 1) && y === py)
+        && !(x === px && py === (y + 1))
+        && !(x === px && py === (y - 1))) {
+        return killPlayer(player, `tried to teleport`, x, y)
       }
-
+      if (state.map[x][y] !== emptyTile) {
+        return killPlayer(player, `crashed on ${state.map[x][y].name}`, x, y)
+      }
       player.x = x
       player.y = y
       player.score++
-      (nextMove[x] || (nextMove[x] = Object.create(null)))[y] = player
-      return false
-    }).forEach(({ player }) => killPlayer(player))
-
-  const generatedMap = genMapFrom((x, y) =>
-    (nextMove[x] && nextMove[x][y]) !== undefined
-      ? nextMove[x][y]
-      : map[x][y])
-
-  state.map = generatedMap
-  graphic.update(players)
-
-  if (Object.keys(nextMove).length && !state.paused()) {
+      state.map[x][y] = player
+      graphic.update(players)
+    })
+    .catch(err => {
+      console.error(err.message)
+      killPlayer(player, 'of an AI error')
+    })))
+/*
     clearTimeout(timeoutId)
     timeoutId = setTimeout(() => {
       cancelAnimationFrame(updateId)
       updateId = requestAnimationFrame(update)
-    }, ((32 / state.speedFactor()) - 1) * 10)
-  } else {
-    gameOver()
-  }
+    }, ((32 / ) - 1) * 10)
+    */
+  clearTimeout(timeoutId)
+  return timeoutId = setTimeout(update, 50)
 }
 
 state.paused(paused => paused ? cancelUpdate() : update())
@@ -282,6 +197,7 @@ const initPlayerData = nextMapState => {
     const y = Math.round(max2PI(Math.sin(angle * i + shift)) * (SIZE / 2 * 0.8) + (SIZE / 2))
     player.x = x
     player.y = y
+    state.map[x][y] = player
   })
 }
 
