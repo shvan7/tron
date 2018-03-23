@@ -14,7 +14,7 @@ const getUrl = async (login, sha) => {
   const res = await fetch(getShaUrl(login))
   if (res.ok) return getAIUrl(login, (await res.json()).sha)
 
-  const sha = (await (await fetch(getShaUrl('nan-academy'))).json()).sha
+  sha = (await (await fetch(getShaUrl('nan-academy'))).json()).sha
   return getAIUrl('nan-academy', sha, login)
 }
 
