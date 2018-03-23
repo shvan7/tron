@@ -5,7 +5,7 @@ const getAIUrl = (login, sha, ai) =>
   `https://rawgit.com/${login}/tron/${sha}/ai/${ai || login}.js`
 
 const getUrl = async (login, sha) => {
-  if (location.hostname.endsWith('.github.io')) {
+  if (!location.hostname.endsWith('.github.io')) {
     return `${location.origin}/ai/${login}.js`
   }
 
