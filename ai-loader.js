@@ -19,8 +19,10 @@ export default async ({ name, id, sha, seed }) => {
   })
 
   const timeoutError = Error('timeout')
+  let t
   const handleWorkerAnswer = (s, f) => {
-    setTimeout(f, 1000, timeoutError)
+    clearTimeout(t)
+    t = setTimeout(f, 1000, timeoutError)
     w.onmessage = s
     w.onerror = f
   }

@@ -18,12 +18,6 @@ const hslToRgb = (h, s, l) => {
   const g = hue2rgb(p, q, h)
   const b = hue2rgb(p, q, h - 1/3)
 
-  console.log({
-    r: r,
-    g: g,
-    b: b,
-  })
-
   return toInt(toRange(r), toRange(g), toRange(b))
 }
 

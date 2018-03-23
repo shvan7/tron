@@ -1,54 +1,50 @@
 import observable from './izi/observ.js'
 import map from './izi/map.js'
 import rseed from './rseed.js'
-import router from './router.js'
+import qs from './izi/query-string.js'
 
-const seed = observable(rseed.seed())
-seed.set = (setSeed => s => setSeed(rseed.seed(Number(s))))(seed.set)
+const setRoute = obj => {
+  const newQuery = '?'+ Object.keys(obj)
+    .sort()
+    .map(key => `${key}=${obj[key]}`)
+    .join('&')
 
-const defaults = {
-  speedFactor: 32,
-  users: [],
-  seed: seed(),
+  if (newQuery !== location.search) {
+    location.search = newQuery
+  }
 }
 
-const urlParams = (parsers =>
-  map((val, key) => (parsers[key] || noOp)(val) || defaults[key], router.get()))
-({ users: u => (u || '').split(','), seed: seed.set, refetch: v => v === 'true', })
+const seed = observable(rseed.seed())
+seed.set = (setSeed => s => setSeed(rseed.seed(Number(s) || 0)))(seed.set)
 
-urlParams.users || (urlParams.users = [ 'js-training' ])
+const defaults = {
+  speedFactor: Number(localStorage.speedFactor) || 32,
+  seed: seed(),
+  users: [],
+}
+
+const urlParams = (parsers => map((val, key) =>
+    (parsers[key] || noOp)(val) || defaults[key], qs()))({
+  users: u => (u || '').split(',') || [ 'random' ],
+  seed: seed.set,
+})
 
 const players = []
 const history = []
 const speedFactor = observable.check(defaults.speedFactor)
-const speedFactorBounds = [0.25, 32]
+const speedFactorBounds = [ 0.25, 32 ]
 
-const decSpeed = () => speedFactor.set(Math.max(speedFactor() / 2, speedFactorBounds[0]))
-const incSpeed = () => speedFactor.set(Math.min(speedFactor() * 2, speedFactorBounds[1]))
+speedFactor(val => localStorage.speedFactor = val)
 
-let previousSeed = seed()
-const reset = () => {
-  const newSeed = seed()
-  if (newSeed !== previousSeed) {
-    router.set({ seed: newSeed, users: urlParams.users.sort() })
-    previousSeed = newSeed
-  } else {
-    rseed.seed(previousSeed)
-  }
-  window.location.reload()
+const decSpeed = () =>
+  speedFactor.set(Math.max(speedFactor() / 2, speedFactorBounds[0]))
 
-  players.forEach(p => {
-    p.dead = false
-    p.score = 0
-  })
+const incSpeed = () =>
+  speedFactor.set(Math.min(speedFactor() * 2, speedFactorBounds[1]))
 
-  history.length = 0
-}
-
-router.set({ seed: previousSeed, users: urlParams.users.sort() })
+setRoute({ seed: seed(), users: urlParams.users.sort() })
 
 export default {
-  refetch: Boolean(urlParams.refetch),
   players,
   seed,
   users: urlParams.users,
@@ -57,6 +53,9 @@ export default {
   speedFactor,
   incSpeed,
   decSpeed,
-  shouldReload: observable.check(false),
-  reset,
+  reset: () => setRoute({
+    seed: Math.floor(Math.random() * 0x80000000),
+    users: urlParams.users.sort(),
+  }),
+  reload: () => location.reload(),
 }

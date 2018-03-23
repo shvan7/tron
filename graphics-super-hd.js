@@ -1,6 +1,7 @@
 import state from './state.js'
 import { SIZE, CASE_SIZE as S } from './config.js'
 import h from './izi/h.js'
+
 const names = Object.create(null)
 const canvas = h.canvas({ width: `${SIZE * S}`, height: `${SIZE * S}`})
 const ctx = canvas.getContext('2d')
@@ -56,7 +57,7 @@ const pauseBtn = ctrlBtn({
 state.paused(paused => pauseBtn.textContent = paused ? '▷' : '❘❘')
 
 const reloadBtn = ctrlBtn({
-  onclick: () => state.shouldReload.set(true),
+  onclick: () => location,
   title: 'r to reload',
 }, '↺')
 
@@ -76,7 +77,7 @@ const speedDisplay = h.span.style({
 state.speedFactor(speedFactor => speedDisplay.textContent = `speed x${state.speedFactor()}`)
 
 export default {
-  init: (mapState, genMapFrom, players) => {
+  init: players => {
     ctx.fillStyle = 'black'
     ctx.fillRect(0, 0, SIZE * S, SIZE * S)
     h.replaceContent(document.body, h.div.style({
@@ -90,6 +91,7 @@ export default {
       position: 'absolute',
       left: 0,
       top: 0,
+      qsdqd: draw({ x, y, color }),
       transform: translate(x, y),
       transition: 'transform 0.1s',
       whiteSpace: 'pre',
@@ -116,8 +118,6 @@ export default {
         reloadBtn,
       ])
     ])))
-
-    return mapState
   },
   setScore: players => players
     .filter(p => p.dead)

@@ -9,68 +9,26 @@ import rseed from './rseed.js'
 import aiLoader from './ai-loader.js'
 import { SIZE, DIR } from './config.js'
 
-const PI4 = Math.PI / 4
-const sget = (key, src) => src && (src[key] || (src[key] = Object.create(null)))
 const sort = fn => arr => arr.slice(0).sort(fn)
-const noOp = () => {}
 sort.byScore = sort((a,b) => a.score - b.score)
-
-const tryCatch = (fn, ...args) => {
-  try { return fn(...args) }
-  catch(err) { return err }
-}
-
-const reduceMap = (fn, acc) => {
-  let x = -1, y
-  while (++x < SIZE) {
-    y = -1
-    while (++y < SIZE) {
-      acc = fn(x, y, acc)
-    }
-  }
-  return acc
-}
-
-const rnd = Math.random
-Math.random = rseed.float
 
 const emptyTile = Object.freeze({ color: 'black', name: 'empty' })
 const notInBounds = n => n >= SIZE || n < 0
 const inBounds = n => n < SIZE && n >= 0
-const genMapFrom = (fn = noOp) => reduceMap((x, y, map) => {
-  (map[x] || (map[x] = Array(SIZE)))[y] = fn(x, y)
-  return map
-}, Array(SIZE))
 
 const players = state.players
 const playerNames = Object.create(null)
-
-window.state = state
-
-const getMap = () => state.map
-const start = () => {}
-
-// get the manathan distance between 2 points
-const dist = (a, b) => Math.abs(a - b)
-const getDist = (a, b) => dist(a.x, b.x) + dist(a.y, b.y)
-const getName = p => p.name
-const getPlayerNames = () => players.map(getName)
-const isPlayerDead = p => p.dead
-const computePlayer = ({ name, dead, x, y }, id) =>
-  `{"name":"${name}","dead":${dead},"x":${x},"y":${y},"id":${id + 1}}`
-
 const addPlayer = async name => {
-  console.log('fetching: ', name)
+  console.log('initializing worker for:', name)
 
   let id = name
   if (playerNames[name]) {
     const regex = new RegExp(`^${name}(\d+)?`)
-    const len = getPlayerNames().filter(n => regex.test(n)).length
+    const len = players.map(p => p.name).filter(n => regex.test(n)).length
     id = `${name}${len > 0 ? len + 1 : ''}`
   }
   const player = playerNames[id] = {
     name: id,
-    color: 'purple',
     dead: false,
     score: 0,
     load: aiLoader({ name, id, seed: state.seed() })
@@ -90,44 +48,36 @@ const killPlayer = (p, cause, x = p.x, y = p.y) => {
   graphic.setScore(players)
 }
 
-const gameOver = () => {
-  graphic.end()
-  console.log('game over', sort.byScore(players))
-}
+const isAlive = player => !player.dead
 
-const livingPlayers = player => !player.dead
-const getAngle = (a, b) => Math.atan2(b.y - a.y, b.x - a.x)
-const _0 = n => n < 10 ? `0${n}` : String(n)
-const pad = str => `        ${str}`.slice(-8)
-let updateId = 0
-let timeoutId = 0
-const cancelUpdate = () => {
-  cancelAnimationFrame(updateId)
-  clearTimeout(timeoutId)
-}
+const isStuck = ({ x, y }) =>
+     state.map.get(x, y - 1) !== emptyTile
+  && state.map.get(x, y + 1) !== emptyTile
+  && state.map.get(x + 1, y) !== emptyTile
+  && state.map.get(x - 1, y) !== emptyTile
 
-const stringifyTile = tile => tile === emptyTile ? 0 : 1
-const stringifyRow = line => line.map(stringifyTile)
-const update = async () => {
+const computePlayer = ({ x, y, name, coords, score, cardinal, direction }) =>
+  ({ x, y, name, coords, score, cardinal, direction })
+
+const update = async forced => {
+  await update.lock
+  clearTimeout(update.timeout)
   const nextMove = Object.create(null)
   const seed = rseed.seed()
-  const jsonMap = `{
-    "players": [${players.map(computePlayer)}],
-    "state": [${state.map.map(stringifyRow)}]
-  }`
-  // new SharedArrayBuffer(1024)
+  const playersLeft = players.filter(isAlive)
 
-  const playersLeft = players.filter(livingPlayers)
   if (!playersLeft.length) {
-    clearTimeout(timeoutId)
-    return gameOver()
+    console.log('game over', sort.byScore(players))
+    return graphic.end()
   }
-  if (state.paused()) {
-    clearTimeout(timeoutId)
-    return timeoutId = setTimeout(update, 50)
-  }
-  await Promise.all(playersLeft.map(player => player.ai(jsonMap)
+
+  if (!forced && state.paused()) return update.request(50)
+
+  const data = JSON.stringify(playersLeft.map(computePlayer))
+  const startTime = performance.now()
+  await (update.lock = Promise.all(shuffle(playersLeft).map(player => player.ai(data)
     .then(({ data }) => {
+      player.cpuTime = (player.cpuTime || 0) + (performance.now() - startTime)
       const { x, y } = JSON.parse(data)
       if (!isNum(x) || !isNum(y)) {
         throw Error('Bad AI return value, expect { x, y } got '+ data)
@@ -142,86 +92,124 @@ const update = async () => {
         && !(x === px && py === (y - 1))) {
         return killPlayer(player, `tried to teleport`, x, y)
       }
-      if (state.map[x][y] !== emptyTile) {
-        return killPlayer(player, `crashed on ${state.map[x][y].name}`, x, y)
-      }
+      player.score++
       player.x = x
       player.y = y
-      player.score++
-      state.map[x][y] = player
-      graphic.update(players)
+      if (state.map.get(x, y) !== emptyTile) {
+        return killPlayer(player, `crashed on ${state.map.get(x, y).name}`, x, y)
+      }
     })
     .catch(err => {
-      console.error(err.message)
+      const { x, y } = player
+      console.log(isStuck(player))
+      console.log(x * SIZE + (y - 1))
+      console.log(x * SIZE + (y + 1))
+      console.log((x + 1) * SIZE + y)
+      console.log((x - 1) * SIZE + y)
       killPlayer(player, 'of an AI error')
-    })))
-/*
-    clearTimeout(timeoutId)
-    timeoutId = setTimeout(() => {
-      cancelAnimationFrame(updateId)
-      updateId = requestAnimationFrame(update)
-    }, ((32 / ) - 1) * 10)
-    */
-  clearTimeout(timeoutId)
-  return timeoutId = setTimeout(update, 50)
+      console.error(err.message)
+    }))))
+
+  // console.log(playersLeft
+  //   .sort((a, b) => b.cpuTime - a.cpuTime).map(a => a.cpuTime))
+
+  playersLeft
+    .sort((a, b) => b.cpuTime - a.cpuTime)
+    .filter(player => playersLeft.some(p => p.name !== player.name
+      && p.x === player.x
+      && p.y === player.y))
+    .forEach(player => killPlayer(player, 'moved at the same spot'))
+
+  playersLeft.forEach(state.map.setAt)
+
+  playersLeft
+    .filter(isAlive)
+    .filter(isStuck)
+    .forEach(player => killPlayer(player, 'is stuck'))
+
+  playersLeft
+    .filter(isAlive)
+    .forEach(player => {
+      console.log(player.name, 'is not stuck at', player.x, player.y)
+      const { x, y } = player
+      const { cardinal, direction } = player.coords
+        .find(coord => coord.x === x && coord.y === y)
+
+      player.coords = [
+        { x, y: y - 1, cardinal: 0, direction: (4 - cardinal) % 4 },
+        { x: x + 1, y, cardinal: 1, direction: (5 - cardinal) % 4 },
+        { x, y: y + 1, cardinal: 2, direction: (6 - cardinal) % 4 },
+        { x: x - 1, y, cardinal: 3, direction: (7 - cardinal) % 4 },
+      ]
+
+      player.cardinal = cardinal
+      player.direction = direction
+    })
+
+  graphic.update(players)
+  const diff = performance.now() - startTime
+  const delay = ((32 / state.speedFactor()) - 1) * 10 - diff
+  return update.request(delay)
 }
+update.request = delay => update.timeout = setTimeout(update, delay)
 
-state.paused(paused => paused ? cancelUpdate() : update())
+state.paused(paused => paused ? clearTimeout(update.timeout) : update())
 
-window.onkeydown = keyHandler({
+addEventListener('keydown', keyHandler({
   space: () => state.paused.set(!state.paused()),
-  s: () => {
-    state.seed.set(rnd())
-    state.shouldReload.set(true)
-  },
-  r: e => (e.metaKey || e.ctrlKey) ? false : state.shouldReload.set(true),
-  right: {
-    shift: () => Array(10).fill().forEach(update),
-    none: update,
-  },
+  r: e => (e.metaKey || e.ctrlKey) ? false : location.reload(),
+  right: () => update(true),
+  s: state.reset,
   up: state.incSpeed,
   down: state.decSpeed,
-})
-
-const empty = () => emptyTile
-const max = m => n => n > m ? max1(n - m) : n
-const max1 = max(1)
-const max2PI = max(Math.PI * 2)
-const initPlayerData = nextMapState => {
-  const angle = (Math.PI * 2) / players.length
-  const rate = (100 / players.length / 100)
-  const shift = angle * Math.random()
-  players.forEach((player, i) => {
-    player.color = hslToRgb(max1(i * rate + 0.25), 1, 0.4)
-    const x = Math.round(max2PI(Math.cos(angle * i + shift)) * (SIZE / 2 * 0.8) + (SIZE / 2))
-    const y = Math.round(max2PI(Math.sin(angle * i + shift)) * (SIZE / 2 * 0.8) + (SIZE / 2))
-    player.x = x
-    player.y = y
-    state.map[x][y] = player
-  })
-}
-
-const newGame = () => {
-  shuffle(players.sort((a, b) => a.name - b.name))
-
-  const nextMapState = genMapFrom(empty)
-
-  state.map = nextMapState
-
-  initPlayerData(nextMapState)
-  graphic.init(nextMapState, genMapFrom, players)
-  update()
-}
-
-const initGame = () => Promise.all(players.map(p => p.load)).then(newGame)
-
-state.shouldReload(shouldReload => {
-  console.log('>>> Reloading...')
-  cancelUpdate()
-  state.reset()
-  newGame()
-  state.shouldReload.set(false)
-})
+}))
 
 state.users.forEach(addPlayer)
-initGame()
+
+Promise.all(players.map(p => p.load)).then(() => {
+  Math.random = rseed.float
+
+  shuffle(players.sort((a, b) => a.name - b.name))
+
+  state.map = Array(SIZE * SIZE).fill(emptyTile)
+
+  state.map.set = (x, y, value = emptyTile) => inBounds(x)
+    && inBounds(y)
+    && (state.map[x * SIZE + y] = value)
+
+  state.map.setAt = p => inBounds(p.x)
+    && inBounds(p.y)
+    && (state.map[p.x * SIZE + p.y] = p)
+
+  state.map.get = (x, y) => inBounds(x)
+    && inBounds(y)
+    && state.map[x * SIZE + y]
+
+  const max = m => n => n > m ? max1(n - m) : n
+  const max1 = max(1)
+  const max2PI = max(Math.PI * 2)
+  const angle = (Math.PI * 2) / players.length
+  const rate = (100 / players.length / 100)
+  const shift = angle * rseed.float()
+  const h = SIZE / 2
+  const m = h * 0.8
+
+  players.forEach((player, i) => {
+    player.color = hslToRgb(max1(i * rate + 0.25), 1, 0.4)
+    player.cardinal = 0
+    player.direction = 0
+    const x = player.x = Math.round(max2PI(Math.cos(angle * i + shift)) * m + h)
+    const y = player.y = Math.round(max2PI(Math.sin(angle * i + shift)) * m + h)
+    player.coords = [
+      { x, y: y - 1, cardinal: 0, direction: 0 },
+      { x: x + 1, y, cardinal: 1, direction: 1 },
+      { x, y: y + 1, cardinal: 2, direction: 2 },
+      { x: x - 1, y, cardinal: 3, direction: 3 },
+    ]
+    state.map.setAt(player)
+  })
+  graphic.init(players)
+  update()
+})
+
+window.state = state
