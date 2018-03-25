@@ -1,4 +1,7 @@
 const SIZE = 100
+const MAP = new Int8Array(SIZE * SIZE) // L'etat de la carte
+const isFree = ({ x, y }) => MAP[y * SIZE + x] === 0 // 0 = case pleine
+const isOccupied = ({ x, y }) => MAP[y * SIZE + x] === 1 // 1 = case pleine
 
 // `inBounds` regarde si notre coordonée (n) n'est pas hors de notre carte
 const inBounds = n => n < SIZE && n >= 0
@@ -56,10 +59,7 @@ const update = state => {
 addEventListener('message', self.init = initEvent => {
   const { seed, id } = JSON.parse(initEvent.data)
   const isOwnPlayer = p => p.name === id
-  const MAP = new Int8Array(SIZE * SIZE)
-  const addToMap = ({ x, y }) => MAP[x * SIZE + y] = 1
-  const isFree = ({ x, y }) => MAP[x * SIZE + y] === 0
-  const isOccupied = ({ x, y }) => MAP[x * SIZE + y] === 1
+  const addToMap = ({ x, y }) => MAP[y * SIZE + x] = 1
 
   let _seed = seed // On utilise une seed pour pouvoir replay les games
   const _m = 0x80000000
@@ -68,7 +68,8 @@ addEventListener('message', self.init = initEvent => {
   addEventListener('message', ({ data }) => {
     const players = JSON.parse(data)
     const player = players.find(isOwnPlayer)
-    players.forEach(addToMap)
+    players.forEach(addToMap) // J'ajoute toutes les nouvelles positions
+    // des joueurs dans notre état de la carte `MAP`
 
     postMessage(JSON.stringify(update({ isFree, isOccupied, players, player })))
   })

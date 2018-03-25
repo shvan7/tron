@@ -3,6 +3,8 @@ import map from './izi/map.js'
 import rseed from './rseed.js'
 import qs from './izi/query-string.js'
 
+const rnd = Math.random
+
 const setRoute = obj => {
   const newQuery = '?'+ Object.keys(obj)
     .sort()
@@ -54,7 +56,7 @@ export default {
   incSpeed,
   decSpeed,
   reset: () => setRoute({
-    seed: Math.floor(Math.random() * 0x80000000),
+    seed: Math.floor(rnd() * 0x80000000),
     users: urlParams.users.sort(),
   }),
   reload: () => location.reload(),

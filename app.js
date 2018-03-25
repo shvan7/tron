@@ -59,6 +59,22 @@ const isStuck = ({ x, y }) =>
 const computePlayer = ({ x, y, name, coords, score, cardinal, direction }) =>
   ({ x, y, name, coords, score, cardinal, direction })
 
+const calculateCoords = player => {
+  const { x, y } = player
+  const { cardinal, direction } = player.coords
+    .find(coord => coord.x === x && coord.y === y)
+
+  player.coords = [
+    { x, y: y - 1, cardinal: 0, direction: (4 - cardinal) % 4 },
+    { x: x + 1, y, cardinal: 1, direction: (5 - cardinal) % 4 },
+    { x, y: y + 1, cardinal: 2, direction: (6 - cardinal) % 4 },
+    { x: x - 1, y, cardinal: 3, direction: (7 - cardinal) % 4 },
+  ]
+
+  player.cardinal = cardinal
+  player.direction = direction
+}
+
 const update = async forced => {
   await update.lock
   clearTimeout(update.timeout)
@@ -129,22 +145,7 @@ const update = async forced => {
 
   playersLeft
     .filter(isAlive)
-    .forEach(player => {
-      console.log(player.name, 'is not stuck at', player.x, player.y)
-      const { x, y } = player
-      const { cardinal, direction } = player.coords
-        .find(coord => coord.x === x && coord.y === y)
-
-      player.coords = [
-        { x, y: y - 1, cardinal: 0, direction: (4 - cardinal) % 4 },
-        { x: x + 1, y, cardinal: 1, direction: (5 - cardinal) % 4 },
-        { x, y: y + 1, cardinal: 2, direction: (6 - cardinal) % 4 },
-        { x: x - 1, y, cardinal: 3, direction: (7 - cardinal) % 4 },
-      ]
-
-      player.cardinal = cardinal
-      player.direction = direction
-    })
+    .forEach(calculateCoords)
 
   graphic.update(players)
   const diff = performance.now() - startTime
@@ -169,7 +170,7 @@ state.users.forEach(addPlayer)
 Promise.all(players.map(p => p.load)).then(() => {
   Math.random = rseed.float
 
-  shuffle(players.sort((a, b) => a.name - b.name))
+  players.sort((a, b) => a.name - b.name)
 
   state.map = Array(SIZE * SIZE).fill(emptyTile)
 
@@ -189,15 +190,19 @@ Promise.all(players.map(p => p.load)).then(() => {
   const max1 = max(1)
   const max2PI = max(Math.PI * 2)
   const angle = (Math.PI * 2) / players.length
-  const rate = (100 / players.length / 100)
+  const rate = (SIZE / players.length / SIZE)
   const shift = angle * rseed.float()
   const h = SIZE / 2
   const m = h * 0.8
 
   players.forEach((player, i) => {
-    player.color = hslToRgb(max1(i * rate + 0.25), 1, 0.4)
     player.cardinal = 0
     player.direction = 0
+    player.color = hslToRgb(max1(i * rate + 0.25), 1, 0.5)
+  })
+
+  // Shuffle players before calculating coords
+  shuffle(players).forEach((player, i) => {
     const x = player.x = Math.round(max2PI(Math.cos(angle * i + shift)) * m + h)
     const y = player.y = Math.round(max2PI(Math.sin(angle * i + shift)) * m + h)
     player.coords = [
