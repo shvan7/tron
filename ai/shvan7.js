@@ -27,7 +27,6 @@ const pickRandom = arr => arr[Math.floor(Math.random() * arr.length)]
 // catch players
 const catchPlayer = (available, enemies, me) => {
 
-  console.log(available)
   if (enemies.length !== 0) {
     const one = enemies[0].x - me.x > 0 ? E : W
     const two = enemies[0].y - me.y > 0 ? S : N
@@ -42,10 +41,14 @@ const catchPlayer = (available, enemies, me) => {
       }
     ]
     if ((Math.abs(enemies[0].x - me.x) + Math.abs(enemies[0].y - me.y)) < 6) {
-      console.log('ouille');
       return available[0]
     }
-    return pickRandom(result)
+    console.log(result);
+    const res = available.filter(p => ((p.x === result[0].x) && (p.y === result[0].y)) || ((p.x === result[1].x) && (p.y === result[1].y)))
+    console.log(res)
+
+
+    return res.length !== 0 ? pickRandom(res) : vailable[0]
   }
   else {
     return available[0]
