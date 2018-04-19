@@ -3,6 +3,17 @@ const MAP = new Int8Array(SIZE * SIZE) // L'etat de la carte
 const isFree = ({ x, y }) => MAP[y * SIZE + x] === 0 // 0 = case pleine
 const isOccupied = ({ x, y }) => MAP[y * SIZE + x] === 1 // 1 = case pleine
 
+// cardinal
+const N = 0
+const E = 1
+const S = 2
+const W = 3
+// direction (relative)
+const TOP = 0
+const RIGHT = 1
+const BOTTOM = 2
+const LEFT = 3
+
 // `inBounds` regarde si notre coordonée (n) n'est pas hors de notre carte
 const inBounds = n => n < SIZE && n >= 0
 
@@ -13,8 +24,36 @@ const isInBounds = ({ x, y }) => inBounds(x) && inBounds(y)
 // `pickRandom` choisi un élément aléatoire d'un tableau
 const pickRandom = arr => arr[Math.floor(Math.random() * arr.length)]
 
+// catch players
+const catchPlayer = (available, enemies, me) => {
+
+  console.log(available)
+  if (enemies.length !== 0) {
+    const one = enemies[0].x - me.x > 0 ? E : W
+    const two = enemies[0].y - me.y > 0 ? S : N
+    const result = [
+      {
+        x: one === W ? me.x - 1 : me.x + 1,
+        y: me.y
+      },
+      {
+        x: me.x,
+        y: two === N ? me.y - 1 : me.y + 1
+      }
+    ]
+    if ((Math.abs(enemies[0].x - me.x) + Math.abs(enemies[0].y - me.y)) < 6) {
+      console.log('ouille');
+      return available[0]
+    }
+    return pickRandom(result)
+  }
+  else {
+    return available[0]
+  }
+}
 // `update` est la fonction appelé à chaque tours
 const update = state => {
+  const enemies = state.players.filter(p => p !== state.player)
   // update est appelé avec un argument state qui contient 4 propriétées :
   // - players qui contient la liste des joueurs
   // - player qui représente le joueur de cette AI
@@ -45,9 +84,10 @@ const update = state => {
 
   // Je filtre une nouvelle fois pour prendre ne gardé que les cases libres
   const available = coordsInBound.filter(isFree)
-
+  const target = catchPlayer(available, enemies, state.player)
   // Je retourne une case au pif dans mon tableau de cases libres
-  return pickRandom(available)
+  return target
+  // return pickRandom(available)
 }
 
 
