@@ -48,7 +48,7 @@ const catchPlayer = (available, enemies, me) => {
     console.log(res)
 
 
-    return res.length !== 0 ? pickRandom(res) : vailable[0]
+    return res.length !== 0 ? pickRandom(res) : available[0]
   }
   else {
     return available[0]
@@ -87,6 +87,7 @@ const update = state => {
 
   // Je filtre une nouvelle fois pour prendre ne gardé que les cases libres
   const available = coordsInBound.filter(isFree)
+
   const target = catchPlayer(available, enemies, state.player)
   // Je retourne une case au pif dans mon tableau de cases libres
   return target
